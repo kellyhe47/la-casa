@@ -1,0 +1,211 @@
+[
+  {
+    "kind": "abuelaMessage",
+    "seed": 101,
+    "frontierTargetNodeID": "g_sh",
+    "independenceBand": 3,
+    "lines": [
+      {
+        "id": "am1",
+        "speaker": "abuela",
+        "spanish": "¡Mi amor! Mira la foto que te mandé. Hice tu favorita... ¿qué es? ¡Dímelo en inglés y te guardo un plato!",
+        "english": ""
+      },
+      {
+        "id": "am2",
+        "speaker": "sofia",
+        "spanish": "¡Es la foto de Abuela! Yo sé qué es... se dice...",
+        "english": "It's Abuela's photo! I know what it is... you say..."
+      }
+    ],
+    "payload": {
+      "abuelaMessage": {
+        "photoKey": "abuela_sopa",
+        "targetAnswer": "soup"
+      }
+    }
+  },
+  {
+    "kind": "kitchenList",
+    "seed": 102,
+    "frontierTargetNodeID": "g_sh",
+    "independenceBand": 3,
+    "lines": [
+      {
+        "id": "kl1",
+        "speaker": "mama",
+        "spanish": "Ven, mi cielo. Vamos a hacer la lista para la sopa de Abuela. Léeme cada palabra.",
+        "english": "Come here, sweetheart. Let's make the list for Abuela's soup. Read me each word."
+      },
+      {
+        "id": "kl2",
+        "speaker": "sofia",
+        "spanish": "¡Yo la leo, Mamá! Palabra por palabra.",
+        "english": "I'll read it, Mama! Word by word."
+      }
+    ],
+    "payload": {
+      "kitchenList": {
+        "items": [
+          {
+            "word": "milk",
+            "nodeID": "v_groc1"
+          },
+          {
+            "word": "eggs",
+            "nodeID": "v_groc1"
+          },
+          {
+            "word": "bread",
+            "nodeID": "v_groc1"
+          },
+          {
+            "word": "rice",
+            "nodeID": "v_groc2"
+          }
+        ]
+      }
+    }
+  },
+  {
+    "kind": "storeShelf",
+    "seed": 103,
+    "frontierTargetNodeID": "g_sh",
+    "independenceBand": 3,
+    "lines": [
+      {
+        "id": "ss1",
+        "speaker": "mama",
+        "spanish": "Aquí está la tienda. Busca lo de la lista, ¿sí? Yo empujo el carrito.",
+        "english": "Here's the store. Find what's on the list, okay? I'll push the cart."
+      },
+      {
+        "id": "ss2",
+        "speaker": "sofia",
+        "spanish": "¡Misión de mandados! ¿Dónde está la leche?",
+        "english": "Errand mission! Where is the milk?"
+      }
+    ],
+    "payload": {
+      "storeShelf": {
+        "items": [
+          {
+            "word": "milk",
+            "nodeID": "v_groc1"
+          },
+          {
+            "word": "eggs",
+            "nodeID": "v_groc1"
+          },
+          {
+            "word": "bread",
+            "nodeID": "v_groc1"
+          },
+          {
+            "word": "rice",
+            "nodeID": "v_groc2"
+          }
+        ],
+        "distractorIDs": [
+          "d_soap",
+          "d_candy",
+          "d_jam",
+          "d_tea",
+          "d_cake",
+          "d_corn",
+          "d_ham",
+          "d_nuts"
+        ]
+      }
+    }
+  },
+  {
+    "kind": "dadCheck",
+    "seed": 104,
+    "frontierTargetNodeID": "g_sh",
+    "independenceBand": 3,
+    "lines": [
+      {
+        "id": "dc1",
+        "speaker": "papa",
+        "spanish": "A ver, a ver... inspección oficial de bolsas. Mmm, el recibo tiene letras chuecas. ¿Me ayudas a arreglarlas?",
+        "english": "Let's see, let's see... official bag inspection. Hmm, the receipt has some crooked letters. Help me fix them?"
+      },
+      {
+        "id": "dc2",
+        "speaker": "sofia",
+        "spanish": "¡Papá! La máquina escribió mal. Yo sé cómo se escribe.",
+        "english": "Papa! The machine spelled it wrong. I know how to spell it."
+      }
+    ],
+    "payload": {
+      "dadCheck": {
+        "slots": [
+          {
+            "wrong": "melk",
+            "correct": "milk"
+          },
+          {
+            "wrong": "bred",
+            "correct": "bread"
+          },
+          {
+            "wrong": "ryce",
+            "correct": "rice"
+          }
+        ]
+      }
+    }
+  },
+  {
+    "kind": "fridgeNote",
+    "seed": 105,
+    "frontierTargetNodeID": "g_sh",
+    "independenceBand": 3,
+    "lines": [
+      {
+        "id": "fn1",
+        "speaker": "mama",
+        "spanish": "Casi lo olvido: falta una cosa para mañana. Déjame una nota en el refri con los imanes, mi amor.",
+        "english": "I almost forgot: we still need one thing for tomorrow. Leave me a note on the fridge with the magnets, sweetie."
+      },
+      {
+        "id": "fn2",
+        "speaker": "sofia",
+        "spanish": "Imanes de letras, ¡mi parte favorita!",
+        "english": "Letter magnets, my favorite part!"
+      }
+    ],
+    "payload": {
+      "fridgeNote": {
+        "targetWord": "fish",
+        "prompt": "Escribe lo que Mamá necesita mañana: ¡una palabra! Spell what Mama needs from the store."
+      }
+    }
+  },
+  {
+    "kind": "babyReadAloud",
+    "seed": 106,
+    "frontierTargetNodeID": "g_sh",
+    "independenceBand": 3,
+    "lines": [
+      {
+        "id": "br1",
+        "speaker": "baby",
+        "spanish": "¡Otra vez! ¡Otra vez!",
+        "english": "Again! Again!"
+      },
+      {
+        "id": "br2",
+        "speaker": "sofia",
+        "spanish": "Última historia y a dormir, bebé. Escucha bien...",
+        "english": "Last story and then bed, baby. Listen close..."
+      }
+    ],
+    "payload": {
+      "babyReadAloud": {
+        "sentence": "the cat can dash"
+      }
+    }
+  }
+]

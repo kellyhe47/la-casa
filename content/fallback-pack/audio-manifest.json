@@ -1,0 +1,16 @@
+{
+  "entries": {
+    "am1": { "file": "am1.mp3", "voiceSlotID": "voice.abuela", "lang": "es-MX", "status": "available" },
+    "am2": { "file": "am2.mp3", "voiceSlotID": "voice.sofia", "lang": "es-MX", "status": "available" },
+    "kl1": { "file": "kl1.mp3", "voiceSlotID": "voice.mama", "lang": "es-MX", "status": "available" },
+    "kl2": { "file": "kl2.mp3", "voiceSlotID": "voice.sofia", "lang": "es-MX", "status": "available" },
+    "ss1": { "file": "ss1.mp3", "voiceSlotID": "voice.mama", "lang": "es-MX", "status": "available" },
+    "ss2": { "file": "ss2.mp3", "voiceSlotID": "voice.sofia", "lang": "es-MX", "status": "available" },
+    "dc1": { "file": "dc1.mp3", "voiceSlotID": "voice.papa", "lang": "es-MX", "status": "available" },
+    "dc2": { "file": "dc2.mp3", "voiceSlotID": "voice.sofia", "lang": "es-MX", "status": "available" },
+    "fn1": { "file": "fn1.mp3", "voiceSlotID": "voice.mama", "lang": "es-MX", "status": "available" },
+    "fn2": { "file": "fn2.mp3", "voiceSlotID": "voice.sofia", "lang": "es-MX", "status": "available" },
+    "br1": { "file": "br1.mp3", "voiceSlotID": "voice.baby", "lang": "es-MX", "status": "available" },
+    "br2": { "file": "br2.mp3", "voiceSlotID": "voice.sofia", "lang": "en-US", "status": "available" }
+  }
+}

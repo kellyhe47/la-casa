@@ -1,0 +1,25 @@
+{
+  "voices": {
+    "voice.sofia": {
+      "elevenLabsVoiceID": "cgSgspJ2msm6clMCkdW9"
+    },
+    "voice.mama": {
+      "elevenLabsVoiceID": "EXAVITQu4vr4xnSDxMaL"
+    },
+    "voice.papa": {
+      "elevenLabsVoiceID": "iP95p4xoKVk53GoZ742B"
+    },
+    "voice.abuela": {
+      "elevenLabsVoiceID": "hpp4J3VqNfWAUOO0d1Us",
+      "defaultLang": "es-MX"
+    },
+    "voice.baby": {
+      "elevenLabsVoiceID": "pFZP5JQG7iQjIQuC4Bku"
+    }
+  },
+  "_userPaidPicks_needsElevenLabsStarterPlan": {
+    "voice.mama": "FGLJyeekUzxl8M3CTG9M",
+    "voice.papa": "86ZLAUcyPNBrbdJKn3u6",
+    "voice.abuela": "hHjbwzYZW17oh0p05AKv"
+  }
+}
