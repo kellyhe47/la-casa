@@ -1,12 +1,13 @@
 ---
 id: "014"
 title: "QA: Fridge magnet tap-tap cannot complete a word"
-status: pending
+status: in-progress
 depends_on: ["009"]
 touches:
   - client/src/components/MagnetTray.tsx
   - client/src/screens/FridgeScreen.tsx
-test_files: []
+test_files:
+  - client/src/components/MagnetTray.test.tsx
 iterations: 0
 attempt_log: []
 source: qa
@@ -28,6 +29,10 @@ Make fridge magnet encoding completable via the required tap-tap path (tap magne
 - Correct sequence for `beans` with delays: slots ended as `"b"` only; `exit:false`; no sticky note text
 - Magnets present including needed letters (`b,e,a,n,s,…`)
 - Screenshot: `.qa/evidence/QA-022-fridge-spell.png`
+
+Known bugs:
+- `!word.includes("")` is always false in JS — completion never fires
+- Duplicate letters (beans has two e's) need multiple tray copies
 
 ## Requirement (verbatim)
 

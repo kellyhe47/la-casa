@@ -1,5 +1,6 @@
 import React, { useEffect, useRef, useState } from "react";
 import type { Screen } from "../state/types";
+import { TransitionScene } from "../assets/scenes/TransitionScene";
 
 interface TransitionScreenProps {
   from: Screen;
@@ -7,14 +8,7 @@ interface TransitionScreenProps {
   onComplete: () => void;
 }
 
-const TRANSITION_COLORS: Partial<Record<Screen, string>> = {
-  "title": "#FFDF9E",
-  "living-room": "#E8917A",
-  "fridge": "#F6D992",
-  "bedroom": "#B9AECF",
-};
-
-export function TransitionScreen({ from, to, onComplete }: TransitionScreenProps) {
+export function TransitionScreen({ from: _from, to: _to, onComplete }: TransitionScreenProps) {
   const [canSkip, setCanSkip] = useState(true); // immediately tappable; visual prompt shows after 1s
   const completedRef = useRef(false);
 
@@ -39,9 +33,6 @@ export function TransitionScreen({ from, to, onComplete }: TransitionScreenProps
     if (canSkip) complete();
   };
 
-  const fromColor = TRANSITION_COLORS[from] || "#FDF3E3";
-  const toColor = TRANSITION_COLORS[to] || "#FDF3E3";
-
   return (
     <div
       data-testid="transition-screen"
@@ -49,23 +40,31 @@ export function TransitionScreen({ from, to, onComplete }: TransitionScreenProps
       style={{
         position: "absolute",
         inset: 0,
-        background: `linear-gradient(135deg, ${fromColor}, ${toColor})`,
         display: "flex",
         alignItems: "center",
         justifyContent: "center",
         cursor: canSkip ? "pointer" : "default",
-        animation: "fade-transition 0.5s ease-in",
+        overflow: "hidden",
+        background: "#FBE2D3",
       }}
     >
-      <div style={{ fontFamily: "'Baloo 2', sans-serif", color: "#6F4B35", fontSize: 24, opacity: 0.7 }}>
+      <div style={{ position: "absolute", inset: 0 }}>
+        <TransitionScene />
+      </div>
+      <div
+        style={{
+          position: "relative",
+          zIndex: 2,
+          fontFamily: "'Baloo 2', sans-serif",
+          color: "#6F4B35",
+          fontSize: 24,
+          opacity: 0.85,
+          textShadow: "0 1px 4px rgba(255,250,240,0.8)",
+          pointerEvents: "none",
+        }}
+      >
         {canSkip ? "Tap to skip" : ""}
       </div>
-      <style>{`
-        @keyframes fade-transition {
-          from { opacity: 0; }
-          to { opacity: 1; }
-        }
-      `}</style>
     </div>
   );
 }

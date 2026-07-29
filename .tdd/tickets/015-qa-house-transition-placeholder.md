@@ -1,12 +1,13 @@
 ---
 id: "015"
 title: "QA: House transition is gradient placeholder, not house glide"
-status: pending
+status: in-progress
 depends_on: ["012", "006"]
 touches:
   - client/src/screens/TransitionScreen.tsx
   - client/src/assets/scenes/TransitionScene.tsx
-test_files: []
+test_files:
+  - client/src/screens/TransitionScreen.test.tsx
 iterations: 0
 attempt_log: []
 source: qa

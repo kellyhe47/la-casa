@@ -1,12 +1,13 @@
 ---
 id: "013"
 title: "QA: Abuela target word missing when image stubbed"
-status: pending
+status: in-progress
 depends_on: ["008"]
 touches:
   - client/src/components/ChatThread.tsx
   - client/src/screens/LivingRoomScreen.tsx
-test_files: []
+test_files:
+  - client/src/components/ChatThread.test.tsx
 iterations: 0
 attempt_log: []
 source: qa

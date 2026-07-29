@@ -1,27 +1,15 @@
 import React, { useState, useCallback, useRef } from "react";
 
 const MAGNET_COLORS = ["#E8917A", "#F2C066", "#9DBBA4", "#B39ECF", "#E0674A"];
-const DISTRACTOR_MAP: Record<string, string[]> = {
-  fish: ["f", "i", "s", "h", "e", "a", "x", "t"],
-  beans: ["b", "e", "a", "n", "s", "i", "o", "t"],
-  milk: ["m", "i", "l", "k", "e", "n", "a", "t"],
-  shop: ["s", "h", "o", "p", "e", "a", "c", "t"],
-  stop: ["s", "t", "o", "p", "h", "e", "a", "n"],
-  the: ["t", "h", "e", "a", "i", "o", "s", "r"],
-  this: ["t", "h", "i", "s", "e", "a", "o", "n"],
-  was: ["w", "a", "s", "e", "i", "o", "b", "t"],
-};
+const DISTRACTOR_POOL = ["e", "a", "i", "o", "t", "n", "x", "q", "z", "j", "v", "w", "c", "r", "b", "h", "s"];
 
+/** Build tray letters from the word's multiset (each occurrence) plus ~4 distractors. */
 function getLetters(word: string): string[] {
   const lower = word.toLowerCase();
-  const base = DISTRACTOR_MAP[lower];
-  if (base) return base;
-  // Default: word letters + 4 distractors
   const wordLetters = lower.split("");
-  const distractors = ["x", "q", "z", "j", "v", "w"].filter(
-    (l) => !wordLetters.includes(l)
-  );
-  return [...new Set([...wordLetters, ...distractors.slice(0, 4)])];
+  const needed = new Set(wordLetters);
+  const distractors = DISTRACTOR_POOL.filter((l) => !needed.has(l)).slice(0, 4);
+  return [...wordLetters, ...distractors];
 }
 
 function shuffle<T>(arr: T[]): T[] {
@@ -73,7 +61,8 @@ export function MagnetTray({ targetWord, onWordComplete }: MagnetTrayProps) {
       setSelectedTrayIdx(null);
 
       const word = getPlacedWord(newSlots);
-      if (!word.includes("") && word === lower && !completedRef.current) {
+      const allFilled = newSlots.every((s) => s.letter);
+      if (allFilled && word === lower && !completedRef.current) {
         completedRef.current = true;
         setTimeout(() => onWordComplete(word), 200);
       }
@@ -102,6 +91,7 @@ export function MagnetTray({ targetWord, onWordComplete }: MagnetTrayProps) {
         {slots.map((slot, i) => (
           <div
             key={i}
+            data-testid="letter-slot"
             onClick={() => handleSlotTap(i)}
             style={{
               width: 58,

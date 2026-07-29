@@ -68,8 +68,8 @@ export function ChatThread({ messages, onPlayVoiceNote }: ChatThreadProps) {
             {isAbuela && <AbuelaAvatar />}
 
             <div style={{ maxWidth: "70%", display: "flex", flexDirection: "column", gap: 4 }}>
-              {/* Image message */}
-              {msg.imageUrl && msg.targetWord && (
+              {/* Image / target-word polaroid — show whenever targetWord is set */}
+              {msg.targetWord && (
                 <div
                   style={{
                     background: "#FFFAF0",
@@ -79,11 +79,21 @@ export function ChatThread({ messages, onPlayVoiceNote }: ChatThreadProps) {
                     boxShadow: "0 4px 12px rgba(0,0,0,0.2)",
                   }}
                 >
-                  {msg.imageUrl && (
+                  {msg.imageUrl ? (
                     <img
                       src={msg.imageUrl}
                       alt={msg.targetWord}
                       style={{ width: 160, height: 160, objectFit: "cover", borderRadius: 8, display: "block" }}
+                    />
+                  ) : (
+                    <div
+                      style={{
+                        width: 160,
+                        height: 160,
+                        borderRadius: 8,
+                        background: "#FDF3E3",
+                        display: "block",
+                      }}
                     />
                   )}
                   {/* Target word client-rendered — R4.2.5 */}
