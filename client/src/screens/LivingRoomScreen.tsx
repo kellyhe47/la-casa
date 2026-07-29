@@ -6,11 +6,12 @@ import { grade } from "../grading/grade";
 import { getNodesForWord } from "../grading/wordNodes";
 import type { SkillGraph } from "../graph/SkillGraph";
 import { contentPipeline } from "../pipeline/ContentPipeline";
-import { voices } from "../../../content/voices.json";
-
-const ABUELA_VOICE_ID = voices["voice.abuela"].elevenLabsVoiceID;
-const ABUELA_LANG = "es-MX";
-const VOICE_NOTE_TEXT = "Mija, ¿qué dice aquí?";
+import {
+  ABUELA_VOICE_ID,
+  ABUELA_LANG,
+  VOICE_NOTE_TEXT,
+  getFirstFrontierWord,
+} from "../pipeline/sessionPrefetch";
 
 type LoopState =
   | "wait"
@@ -27,18 +28,6 @@ interface LivingRoomScreenProps {
   seed: string;
   onAdvance: () => void;
   independence: number;
-}
-
-function getFirstFrontierWord(graph: SkillGraph): string {
-  const frontier = graph.frontier();
-  if (frontier.length === 0) return "milk";
-  const node = frontier[0];
-  const nodeWordMap: Record<string, string> = {
-    g_sh: "fish", g_ee: "beans", g_th: "this", g_vb: "van",
-    g_z: "zip", g_scl: "stop", g_ae: "cake", g_ch: "cheese",
-    v_groc2: "beans", v_groc1: "milk",
-  };
-  return nodeWordMap[node.id] || "milk";
 }
 
 /** Prefer ElevenLabs; fall back to browser speech when proxy stubs (no key). */

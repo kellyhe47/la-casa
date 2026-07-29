@@ -149,5 +149,3 @@ export function ChatThread({ messages, onPlayVoiceNote }: ChatThreadProps) {
     </div>
   );
 }
-
-export type { ChatMessage };

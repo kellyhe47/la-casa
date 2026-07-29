@@ -8,6 +8,7 @@ import { BedroomScreen } from "./screens/BedroomScreen";
 import { TransitionScreen } from "./screens/TransitionScreen";
 import { OffRampScreen } from "./screens/OffRampScreen";
 import { DebugOverlay } from "./components/DebugOverlay";
+import { prefetchSessionStart } from "./pipeline/sessionPrefetch";
 import type { Screen } from "./state/types";
 
 // Check ?debug=1 URL param
@@ -49,9 +50,15 @@ export default function App() {
     return () => window.removeEventListener("keydown", handleKeyDown);
   }, []);
 
-  // Start session on first load
+  // Start session on first load and warm the first exchange's caches (image +
+  // voice note) so the title screen + transition hide the generation latency.
+  // Guarded so StrictMode's double-invoke can't re-roll the seed.
   useEffect(() => {
-    appStore.getState().startSession();
+    if (!appStore.getState().graph) {
+      appStore.getState().startSession();
+    }
+    const { graph: g, sessionSeed: s } = appStore.getState();
+    if (g && s) prefetchSessionStart(g, s);
   }, []);
 
   const handleAdvance = useCallback(() => {
@@ -93,7 +100,6 @@ export default function App() {
               appStore.getState().setMicState("granted");
               handleAdvance();
             }}
-            onSessionStart={() => appStore.getState().startSession()}
           />
         );
 
