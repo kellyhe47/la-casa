@@ -1,0 +1,327 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>La Casa — Learning Graph Architecture</title>
+<style>
+  :root {
+    --ink: #6F4B35;
+    --cream: #FFFAF0;
+    --cream2: #FDF3E3;
+    --terracotta: #E0674A;
+    --coral: #F4A08C;
+    --butter: #F5D98B;
+    --mint: #A8D8C0;
+    --lavender: #C7B8E0;
+    --mono: "SF Mono", ui-monospace, Menlo, monospace;
+  }
+  * { box-sizing: border-box; margin: 0; }
+  body {
+    background: var(--cream);
+    color: var(--ink);
+    font-family: "Baloo 2", "Comic Sans MS", -apple-system, system-ui, sans-serif;
+    padding: 40px 24px 80px;
+    line-height: 1.45;
+  }
+  .wrap { max-width: 1080px; margin: 0 auto; }
+  h1 { font-size: 34px; letter-spacing: -0.5px; }
+  h1 small { font-size: 16px; font-weight: 600; opacity: .65; display: block; }
+  h2 {
+    font-size: 22px; margin: 48px 0 6px;
+    display: flex; align-items: center; gap: 10px;
+  }
+  h2 .chip {
+    font-size: 12px; font-weight: 700; padding: 2px 10px; border-radius: 999px;
+    border: 2.5px solid var(--ink); background: var(--cream2);
+  }
+  p.lead { max-width: 72ch; margin-bottom: 14px; font-size: 15px; }
+  .panel {
+    background: var(--cream2); border: 3px solid var(--ink); border-radius: 18px;
+    padding: 18px; margin-top: 14px; overflow-x: auto;
+  }
+  svg { display: block; width: 100%; height: auto; }
+  text { font-family: "Baloo 2", "Comic Sans MS", system-ui, sans-serif; fill: var(--ink); }
+  .mono { font-family: var(--mono); }
+  .legend { display: flex; flex-wrap: wrap; gap: 14px; margin-top: 10px; font-size: 13px; font-weight: 600; }
+  .legend span { display: inline-flex; align-items: center; gap: 6px; }
+  .dot { width: 14px; height: 14px; border-radius: 5px; border: 2.5px solid var(--ink); display: inline-block; }
+  footer { margin-top: 56px; font-size: 13px; opacity: .7; }
+  code { font-family: var(--mono); font-size: .9em; background: var(--cream2); border: 1.5px solid var(--ink); border-radius: 6px; padding: 1px 6px; }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+<h1>The Learning Graph, technically
+  <small>La Casa · how one JSON graph drives content, difficulty, and language — and how content scales</small>
+</h1>
+
+<!-- ============ SECTION 1: THE NODE ============ -->
+<h2><span class="chip">1</span> One node, one loop</h2>
+<p class="lead">Everything the system knows about the learner is ~25 nodes. Each node is one teachable unit
+(a grapheme→phoneme mapping, a sight word, or a vocabulary item) carrying a single <b>mastery</b> value.
+Every graded interaction in the game — a shelf tap, a mic utterance, a magnet spelling — resolves to
+deterministic writes on nodes. No LLM anywhere in this loop (ADR-0001).</p>
+
+<div class="panel">
+<svg viewBox="0 0 1040 350" role="img" aria-label="Node update loop">
+  <defs>
+    <marker id="arr" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+      <path d="M0,0 L10,5 L0,10 z" fill="#6F4B35"/>
+    </marker>
+  </defs>
+
+  <!-- gameplay event -->
+  <rect x="20" y="90" width="200" height="150" rx="16" fill="#F4A08C" stroke="#6F4B35" stroke-width="3.5"/>
+  <text x="120" y="122" text-anchor="middle" font-weight="800" font-size="17">Graded event</text>
+  <text x="120" y="150" text-anchor="middle" font-size="13">shelf tap (decoding)</text>
+  <text x="120" y="170" text-anchor="middle" font-size="13">mic utterance (read-aloud)</text>
+  <text x="120" y="190" text-anchor="middle" font-size="13">magnet spelling (encoding)</text>
+  <text x="120" y="218" text-anchor="middle" font-size="12" font-style="italic">result ∈ {0, 1}</text>
+
+  <!-- grade fn -->
+  <rect x="290" y="105" width="210" height="120" rx="16" fill="#FFFAF0" stroke="#6F4B35" stroke-width="3.5"/>
+  <text x="395" y="135" text-anchor="middle" font-weight="800" font-size="16">grade( )</text>
+  <text x="395" y="158" text-anchor="middle" font-size="12.5">pure function, &lt;100 ms</text>
+  <text x="395" y="176" text-anchor="middle" font-size="12.5">fuzzy match vs known target</text>
+  <text x="395" y="194" text-anchor="middle" font-size="12.5">no network · no LLM</text>
+  <text x="395" y="212" text-anchor="middle" font-size="12" font-style="italic">same input → same grade</text>
+
+  <!-- node -->
+  <rect x="580" y="55" width="260" height="220" rx="16" fill="#F5D98B" stroke="#6F4B35" stroke-width="3.5"/>
+  <text x="710" y="86" text-anchor="middle" font-weight="800" font-size="17">Node</text>
+  <text x="710" y="112" text-anchor="middle" font-size="13" class="mono">id: "g_sh"  ·  sh → /ʃ/</text>
+  <text x="710" y="136" text-anchor="middle" font-size="13" class="mono">prereqs: ["g_cvc"]</text>
+  <text x="710" y="160" text-anchor="middle" font-size="13" class="mono">confusion: true ⚑</text>
+  <text x="710" y="184" text-anchor="middle" font-size="13" class="mono">mastery: 0.0 → 1.0</text>
+  <text x="710" y="208" text-anchor="middle" font-size="13" class="mono">attempts: [(t, result)…]</text>
+  <text x="710" y="244" text-anchor="middle" font-size="12.5" font-weight="700">mastery ← 0.7·mastery + 0.3·result</text>
+  <text x="710" y="262" text-anchor="middle" font-size="11.5" font-style="italic">in-memory only — fresh each session</text>
+
+  <!-- queries out -->
+  <rect x="905" y="70" width="115" height="54" rx="12" fill="#A8D8C0" stroke="#6F4B35" stroke-width="3"/>
+  <text x="962" y="93" text-anchor="middle" font-weight="800" font-size="13.5">Frontier</text>
+  <text x="962" y="110" text-anchor="middle" font-size="10.5">what to teach</text>
+
+  <rect x="905" y="140" width="115" height="54" rx="12" fill="#C7B8E0" stroke="#6F4B35" stroke-width="3"/>
+  <text x="962" y="163" text-anchor="middle" font-weight="800" font-size="13.5">Independence</text>
+  <text x="962" y="180" text-anchor="middle" font-size="10.5">how much English</text>
+
+  <rect x="905" y="210" width="115" height="54" rx="12" fill="#FFFAF0" stroke="#6F4B35" stroke-width="3"/>
+  <text x="962" y="233" text-anchor="middle" font-weight="800" font-size="13.5">Validator</text>
+  <text x="962" y="250" text-anchor="middle" font-size="10.5">what's readable</text>
+
+  <!-- arrows -->
+  <line x1="220" y1="165" x2="283" y2="165" stroke="#6F4B35" stroke-width="3.5" marker-end="url(#arr)"/>
+  <line x1="500" y1="165" x2="573" y2="165" stroke="#6F4B35" stroke-width="3.5" marker-end="url(#arr)"/>
+  <line x1="840" y1="100" x2="898" y2="97" stroke="#6F4B35" stroke-width="3" marker-end="url(#arr)"/>
+  <line x1="840" y1="165" x2="898" y2="166" stroke="#6F4B35" stroke-width="3" marker-end="url(#arr)"/>
+  <line x1="840" y1="230" x2="898" y2="236" stroke="#6F4B35" stroke-width="3" marker-end="url(#arr)"/>
+
+  <!-- loop back -->
+  <path d="M 962 275 C 962 315, 120 315, 120 245" fill="none" stroke="#6F4B35" stroke-width="3" stroke-dasharray="7 6" marker-end="url(#arr)"/>
+  <text x="540" y="340" text-anchor="middle" font-size="12.5" font-style="italic">queries shape the NEXT beat — re-queried per beat, so a fast kid is pushed and a struggling kid is reinforced</text>
+</svg>
+</div>
+
+<!-- ============ SECTION 2: QUERIES ============ -->
+<h2><span class="chip">2</span> Three queries drive the whole game</h2>
+<p class="lead">The graph is read three ways, and each read answers a different question. All three are pure
+functions over node state — recomputed before every beat.</p>
+
+<div class="panel">
+<svg viewBox="0 0 1040 430" role="img" aria-label="Graph queries">
+  <!-- mini graph -->
+  <g>
+    <text x="150" y="30" text-anchor="middle" font-weight="800" font-size="16">The graph (25 nodes)</text>
+    <!-- edges -->
+    <g stroke="#6F4B35" stroke-width="2.5" opacity=".55">
+      <line x1="90" y1="90" x2="150" y2="150"/>
+      <line x1="150" y1="90" x2="150" y2="150"/>
+      <line x1="210" y1="90" x2="150" y2="150"/>
+      <line x1="150" y1="150" x2="80" y2="230"/>
+      <line x1="150" y1="150" x2="150" y2="230"/>
+      <line x1="150" y1="150" x2="220" y2="230"/>
+      <line x1="80" y1="230" x2="80" y2="310"/>
+    </g>
+    <!-- mastered -->
+    <g stroke="#6F4B35" stroke-width="3">
+      <circle cx="90" cy="90" r="22" fill="#6F4B35"/>
+      <circle cx="150" cy="90" r="22" fill="#6F4B35"/>
+      <circle cx="210" cy="90" r="22" fill="#6F4B35"/>
+      <circle cx="150" cy="150" r="22" fill="#6F4B35"/>
+      <!-- frontier -->
+      <circle cx="80" cy="230" r="22" fill="#A8D8C0"/>
+      <circle cx="150" cy="230" r="22" fill="#A8D8C0"/>
+      <circle cx="220" cy="230" r="22" fill="#A8D8C0"/>
+      <!-- locked -->
+      <circle cx="80" cy="310" r="22" fill="#FFFAF0" stroke-dasharray="5 4"/>
+    </g>
+    <text x="90" y="95" text-anchor="middle" font-size="10" fill="#FFFAF0" font-weight="700">g_a</text>
+    <text x="150" y="95" text-anchor="middle" font-size="10" fill="#FFFAF0" font-weight="700">g_i</text>
+    <text x="210" y="95" text-anchor="middle" font-size="9" fill="#FFFAF0" font-weight="700">g_eou</text>
+    <text x="150" y="155" text-anchor="middle" font-size="9" fill="#FFFAF0" font-weight="700">g_cvc</text>
+    <text x="80" y="235" text-anchor="middle" font-size="10" font-weight="700">g_sh</text>
+    <text x="150" y="235" text-anchor="middle" font-size="10" font-weight="700">g_th</text>
+    <text x="220" y="235" text-anchor="middle" font-size="10" font-weight="700">g_vb</text>
+    <text x="80" y="315" text-anchor="middle" font-size="10" font-weight="700">g_ch</text>
+    <text x="150" y="360" text-anchor="middle" font-size="12" font-weight="600">■ mastered · ■ frontier · ◌ locked</text>
+  </g>
+
+  <!-- Query cards -->
+  <g>
+    <rect x="330" y="55" width="330" height="105" rx="16" fill="#A8D8C0" stroke="#6F4B35" stroke-width="3.5"/>
+    <text x="350" y="85" font-weight="800" font-size="16">frontier()</text>
+    <text x="350" y="108" font-size="12.5" class="mono">prereqs all ≥ 0.8  ∧  mastery &lt; 0.8</text>
+    <text x="350" y="130" font-size="12.5">→ the next thing worth teaching.</text>
+    <text x="350" y="148" font-size="12.5">Every beat's content target comes from here.</text>
+
+    <rect x="330" y="180" width="330" height="105" rx="16" fill="#C7B8E0" stroke="#6F4B35" stroke-width="3.5"/>
+    <text x="350" y="210" font-weight="800" font-size="16">independence()</text>
+    <text x="350" y="233" font-size="12.5" class="mono">band = clamp(round(acc₂₀ × 10), 1, 10)</text>
+    <text x="350" y="255" font-size="12.5">Rolling accuracy → band 1–10 with hysteresis.</text>
+    <text x="350" y="273" font-size="12.5">Selects the bilingual rule set for all dialogue.</text>
+
+    <rect x="330" y="305" width="330" height="105" rx="16" fill="#FFFAF0" stroke="#6F4B35" stroke-width="3.5"/>
+    <text x="350" y="335" font-weight="800" font-size="16">validatorVocab()</text>
+    <text x="350" y="358" font-size="12.5" class="mono">nodes ≥ 0.8  +  exactly 1 frontier target</text>
+    <text x="350" y="380" font-size="12.5">The complete set of graphemes/words any</text>
+    <text x="350" y="398" font-size="12.5">generated sentence is allowed to use.</text>
+  </g>
+
+  <!-- consumers -->
+  <g>
+    <rect x="720" y="55" width="300" height="105" rx="16" fill="#FDF3E3" stroke="#6F4B35" stroke-width="3"/>
+    <text x="740" y="85" font-weight="800" font-size="15">→ beat content</text>
+    <text x="740" y="108" font-size="12.5">List words, read-aloud sentence, and the</text>
+    <text x="740" y="126" font-size="12.5">fridge word all aim at the live frontier —</text>
+    <text x="740" y="144" font-size="12.5">including the word missed this session.</text>
+
+    <rect x="720" y="180" width="300" height="105" rx="16" fill="#FDF3E3" stroke="#6F4B35" stroke-width="3"/>
+    <text x="740" y="210" font-weight="800" font-size="15">→ dialogue language</text>
+    <text x="740" y="233" font-size="12.5">Band 3: "Necesitamos cosas — we need</text>
+    <text x="740" y="251" font-size="12.5">some things!" · Band 8: English only.</text>
+    <text x="740" y="269" font-size="12.5">Target words always English. Abuela never is.</text>
+
+    <rect x="720" y="305" width="300" height="105" rx="16" fill="#FDF3E3" stroke="#6F4B35" stroke-width="3"/>
+    <text x="740" y="335" font-weight="800" font-size="15">→ content gate</text>
+    <text x="740" y="358" font-size="12.5">Any LLM sentence using an unmastered</text>
+    <text x="740" y="376" font-size="12.5">grapheme is rejected deterministically.</text>
+    <text x="740" y="394" font-size="12.5">Reject → regenerate; the scene waits, living.</text>
+  </g>
+
+  <g stroke="#6F4B35" stroke-width="3" marker-end="url(#arr)">
+    <line x1="660" y1="107" x2="713" y2="107"/>
+    <line x1="660" y1="232" x2="713" y2="232"/>
+    <line x1="660" y1="357" x2="713" y2="357"/>
+    <line x1="255" y1="110" x2="323" y2="107"/>
+    <line x1="255" y1="220" x2="323" y2="232"/>
+    <line x1="255" y1="300" x2="323" y2="352"/>
+  </g>
+</svg>
+</div>
+
+<!-- ============ SECTION 3: SESSION ARC ============ -->
+<h2><span class="chip">3</span> One session, one arc</h2>
+<p class="lead">Nothing persists between sessions. Each ¡Jugar! seeds the graph from a bundled mid-progress
+state (CVC + basics mastered, frontier on the Spanish-L1 confusion set) so a single ~5-minute playthrough
+shows the full loop: frontier word introduced → missed → corrected → spelled → read aloud in a sentence,
+while independence climbs from band 3 to ~8 and the Spanish scaffold visibly fades.</p>
+
+<div class="panel">
+<svg viewBox="0 0 1040 230" role="img" aria-label="Session arc">
+  <!-- band curve -->
+  <polyline points="60,170 210,158 360,140 510,118 660,95 810,72 960,60"
+    fill="none" stroke="#C7B8E0" stroke-width="6" stroke-linecap="round"/>
+  <g font-size="12" font-weight="700">
+    <text x="60" y="196" text-anchor="middle">band 3</text>
+    <text x="960" y="196" text-anchor="middle">band 8–9</text>
+  </g>
+  <text x="510" y="215" text-anchor="middle" font-size="12.5" font-style="italic">independence — the Spanish→English fade, completing exactly at the finale</text>
+
+  <!-- beats -->
+  <g stroke="#6F4B35" stroke-width="3">
+    <circle cx="60" cy="170" r="26" fill="#F4A08C"/>
+    <circle cx="210" cy="158" r="26" fill="#F5D98B"/>
+    <circle cx="360" cy="140" r="26" fill="#A8D8C0"/>
+    <circle cx="510" cy="118" r="26" fill="#F5D98B"/>
+    <circle cx="660" cy="95" r="26" fill="#F5D98B"/>
+    <circle cx="810" cy="72" r="26" fill="#C7B8E0"/>
+  </g>
+  <g font-size="11" font-weight="800" text-anchor="middle">
+    <text x="60" y="166">Abuela</text><text x="60" y="180">mic</text>
+    <text x="210" y="154">List</text><text x="210" y="168">narrative</text>
+    <text x="360" y="136">Store</text><text x="360" y="150">taps</text>
+    <text x="510" y="114">Dad</text><text x="510" y="128">retry</text>
+    <text x="660" y="91">Fridge</text><text x="660" y="105">spell</text>
+    <text x="810" y="68">Baby</text><text x="810" y="82">read</text>
+  </g>
+  <g font-size="11" text-anchor="middle" font-style="italic">
+    <text x="60" y="125">reads word</text>
+    <text x="210" y="113">meets "beans"</text>
+    <text x="360" y="95">misses → beads</text>
+    <text x="510" y="73">corrected: beans</text>
+    <text x="660" y="50">spells B-E-A-N-S</text>
+    <text x="810" y="28">"The beans are in the soup!"</text>
+  </g>
+</svg>
+</div>
+
+<!-- ============ SECTION 4: CONTENT SCALING ============ -->
+<h2><span class="chip">4</span> How content scales: everything above the engine is data</h2>
+<p class="lead">The engine (graph + grading + validator + prompt assembly) never changes. Three orthogonal
+data axes multiply on top of it — a new theme, a new grade band, or a new home language is JSON + art,
+zero new code. The LLM fills slots inside authored templates; the validator guarantees whatever it
+writes is readable by <em>this</em> kid; when content runs late, the fiction waits in character — idle
+animations and ambient house sound, never a spinner or canned stand-in.</p>
+
+<div class="panel">
+<svg viewBox="0 0 1040 400" role="img" aria-label="Content scaling">
+  <!-- engine base -->
+  <rect x="180" y="290" width="680" height="80" rx="16" fill="#6F4B35"/>
+  <text x="520" y="322" text-anchor="middle" font-weight="800" font-size="17" fill="#FFFAF0">Engine — never changes</text>
+  <text x="520" y="348" text-anchor="middle" font-size="12.5" fill="#FFFAF0">skill graph · deterministic grading · decodable-text validator · prompt assembly · prefetch · living-scene wait</text>
+
+  <!-- axis 1: themes -->
+  <rect x="60" y="60" width="280" height="190" rx="16" fill="#A8D8C0" stroke="#6F4B35" stroke-width="3.5"/>
+  <text x="200" y="92" text-anchor="middle" font-weight="800" font-size="16">Theme packs</text>
+  <text x="200" y="114" text-anchor="middle" font-size="12" font-style="italic">rolled per session</text>
+  <text x="80" y="142" font-size="13">🛒 Grocery run (MVP)</text>
+  <text x="80" y="164" font-size="13">🐠 Pet store — fish, chick, frog…</text>
+  <text x="80" y="186" font-size="13" opacity=".55">🏫 School supplies…</text>
+  <text x="80" y="208" font-size="13" opacity=".55">🏖️ Beach day…</text>
+  <text x="200" y="236" text-anchor="middle" font-size="11.5" font-weight="700">= item vocab + shelf art + joke fodder</text>
+
+  <!-- axis 2: templates -->
+  <rect x="380" y="60" width="280" height="190" rx="16" fill="#F5D98B" stroke="#6F4B35" stroke-width="3.5"/>
+  <text x="520" y="92" text-anchor="middle" font-weight="800" font-size="16">Beat templates + story bible</text>
+  <text x="520" y="114" text-anchor="middle" font-size="12" font-style="italic">authored structure, LLM-filled slots</text>
+  <text x="400" y="142" font-size="13">The errand rail: list → find →</text>
+  <text x="400" y="162" font-size="13">check → note → bedtime story</text>
+  <text x="400" y="188" font-size="13">LLM fills dialogue &amp; sentences;</text>
+  <text x="400" y="208" font-size="13">never invents structure or grades.</text>
+  <text x="520" y="236" text-anchor="middle" font-size="11.5" font-weight="700">1 authored story → 500 generated ones</text>
+
+  <!-- axis 3: language -->
+  <rect x="700" y="60" width="280" height="190" rx="16" fill="#C7B8E0" stroke="#6F4B35" stroke-width="3.5"/>
+  <text x="840" y="92" text-anchor="middle" font-weight="800" font-size="16">Home-language packs</text>
+  <text x="840" y="114" text-anchor="middle" font-size="12" font-style="italic">the transfer layer is data too</text>
+  <text x="720" y="142" font-size="13">🇲🇽 Spanish: cognate table, glosses,</text>
+  <text x="720" y="162" font-size="13">confusion set (/ɪ iː/, v/b, /θ/…)</text>
+  <text x="720" y="188" font-size="13" opacity=".55">🇻🇳 Vietnamese · 🇵🇭 Tagalog ·</text>
+  <text x="720" y="208" font-size="13" opacity=".55">🇭🇹 Haitian Creole = new JSON</text>
+  <text x="840" y="236" text-anchor="middle" font-size="11.5" font-weight="700">new language ≠ new code</text>
+
+  <g stroke="#6F4B35" stroke-width="3.5" marker-end="url(#arr)">
+    <line x1="200" y1="250" x2="290" y2="285"/>
+    <line x1="520" y1="250" x2="520" y2="283"/>
+    <line x1="840" y1="250" x2="750" y2="285"/>
+  </g>
+</svg>
+</div>
+
+<footer>La Casa · learning-graph architecture · static reference, see PRD §6–§8 for normative spec.</footer>
+</div>
+</body>
+</html>

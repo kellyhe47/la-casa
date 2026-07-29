@@ -14,4 +14,4 @@ All grading — read-aloud matching, spelling, item selection — is a determini
 ## Consequences
 
 - Every mechanic must be designed so the expected answer (or answer set) is known before the kid responds — open-ended prompts require authoring-time key expansion, not runtime judgment.
-- ASR stays known-target: `contextualStrings` biasing + fuzzy match, never open transcription.
+- ASR stays known-target: the transcript is only ever fuzzy-matched against the known expected answer, never open transcription.

@@ -15,12 +15,20 @@ One templated story unit on the rail (e.g. "Mom hands you the list"). The LLM fi
 _Avoid_: scene (ambiguous), screen
 
 **Rail**:
-The MVP's linear beat sequence: living room → kitchen → store → home → fridge → bedroom. There is no free-roam navigation in MVP.
+The MVP's linear beat sequence: living room → kitchen → store → home → fridge → bedroom. There is no free-roam navigation in MVP. The Abuela, fridge, and bedroom beats are loops the kid exits through an in-fiction button.
 _Avoid_: map, hub
 
+**Theme**:
+A data pack that flavors the errand core of a session (list items, shelf art, joke domain), rolled at session start. Abuela, the fridge, and the bedtime story are not theme-bound — they follow the frontier. Theme is flavor; the graph is the curriculum.
+_Avoid_: level pack, world
+
+**Session**:
+One playthrough, title to "Buenas noches." All learner state lives and dies inside it — nothing is saved between sessions; every play is brand new.
+_Avoid_: save, profile, account
+
 **Sofía**:
-The player character — a ~7-year-old girl, fixed on-screen avatar. Characters address her by name ("mija", "Sofía").
-_Avoid_: the user, the player (in content)
+The player character — a ~7-year-old girl. The game is first person: the camera is Sofía; she appears only as hands and held objects, and her voice is the kid's own (never TTS'd). Characters address the camera by name ("mija", "Sofía").
+_Avoid_: the user, the player (in content), avatar
 
 ### Learning model
 
@@ -29,12 +37,16 @@ One teachable unit in the skill graph: a grapheme→phoneme mapping, a sight wor
 _Avoid_: skill, lesson, level
 
 **Frontier**:
-The set of nodes whose prerequisites are mastered but whose own mastery is low. The next content target is always drawn from the frontier.
+The set of nodes whose prerequisites are mastered but which are not yet mastered themselves. The next content target is always drawn from the frontier; a node stays there until it is actually mastered.
 _Avoid_: next lesson, queue
 
 **Mastery**:
-A 0–1 value per node per kid, nudged by attempts and decayed by time. The only measure of learner state.
+A 0–1 value per node per kid, nudged by attempts. The only measure of learner state. A pass credits every node the word contains; a miss debits only the targeted frontier node (generous credit, precise blame). Never shown to the kid.
 _Avoid_: score, XP, progress points
+
+**Grace pattern**:
+The rule that every character resolves the answer warmly after two misses — gives it in English and celebrates anyway. The kid is never stuck; the graph records the truth, the fiction doesn't need to.
+_Avoid_: hint system, fail state
 
 **Independence**:
 A single 1–10 value derived from mastery, with hysteresis. Selects the bilingual scaffolding rule set — higher = more English. It is a ceiling, not an override: character first-lines stay bilingual below 9, and Abuela never switches to English.
@@ -58,7 +70,7 @@ The judgment step is a pure function: (transcript or input, known target) → gr
 _Avoid_: AI scoring, evaluation
 
 **Known-target matching**:
-The ASR posture: the expected answer is always known, `contextualStrings` biases the recognizer toward it, and output is matched against it. Open transcription is never performed.
+The ASR posture: the expected answer is always known and the recognizer's output is only ever matched against it. Open transcription is never surfaced, stored, or interpreted.
 _Avoid_: speech-to-text (implies open transcription)
 
 **Decoding**:
@@ -79,8 +91,9 @@ The fixed definition of family, voices, humor register, and warmth. Authored by 
 The deterministic gate that rejects any generated sentence using graphemes beyond the kid's mastered nodes plus one frontier target.
 _Avoid_: content filter
 
-**Fallback pack**:
-Bundled pre-authored beats used on LLM/TTS timeout or error. The kid never sees a spinner or an error state.
+**Living-scene wait**:
+How latency surfaces: when content is late, the fiction waits — character idle animations and ambient house sound, no spinner, no canned stand-in content. Honest waiting absorbed into the world.
+_Avoid_: loading state, spinner, fallback
 
 **Prefetch**:
 Generating the next beat's text and voice audio while the current beat plays. The latency-hiding rule for both LLM and TTS.
