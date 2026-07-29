@@ -5,7 +5,7 @@
 > Architecture reference: [docs/architecture.html](./docs/architecture.html).
 
 **Prompt:** Nerdy/Varsity Tutors Challenge 3 — English Reading Game for young learners (fluency, comprehension, vocabulary).
-**Target:** web app (decision 2026-07-29: this repo is the web build; the sibling `nerdyv2` is the iOS build), desktop + tablet browsers, landscape layout, WebGL-rendered scenes. Learner persona: Spanish-speaking Grade-2 kid.
+**Target:** web app (decision 2026-07-29: this repo is the web build; the sibling `nerdyv2` is the iOS build), desktop + tablet browsers, landscape layout, DOM/SVG-rendered scenes (decision 2026-07-29 — see docs/research/art-rendering-pipeline.md: the design mocks' SVG is production-grade; no canvas engine needed). Learner persona: Spanish-speaking Grade-2 kid.
 **Thesis:** transfer, not remediation — the kid's Spanish phonemic awareness and cognate vocabulary are assets. Never score accent; score **decoding**.
 
 ---
@@ -55,7 +55,7 @@ Title (¡Jugar!) → Living room (Abuela loop) → Fridge (Dad's magnet loop) �
 **R3.2** Between beats, a first-person travel transition: the camera glides through the house (parallax pan across the cross-section / doorway push-through) from room to room. It is a transition, not a menu — no taps required, skippable after 1s.
 **R3.3** Title screen holds exactly one control: a big terracotta **¡Jugar!** button. No menu, no settings, no continue — every play is brand new (refresh → ¡Jugar! *is* the new-story path; no separate control).
 **R3.4** Tapping ¡Jugar! immediately requests **mic permission** (the adult-hands moment — never mid-fiction), then a half-second mic check absorbed into fiction (the game invites a "¡Hola!" — any detected sound passes). **The mic is a hard requirement:** permission denied or no mic → the game does not start; ¡Jugar! shows one calm adult-facing message ("La Casa needs a microphone to play"). No degraded mode.
-**R3.5** Session start seeds the graph in memory from [content/demo-state.json](./content/demo-state.json). Nothing is ever written to storage.
+**R3.5** ¡Jugar! rolls a **session seed** (feeds every generation cache key and the debug overlay) and seeds the graph in memory from [content/demo-state.json](./content/demo-state.json). Nothing is ever written to storage.
 **R3.6** Screens: Title, House transition, Living room, Fridge, Bedroom, Off-ramp. Debug overlay togglable on any screen (§6.5).
 
 ### 3.1 Screen-by-screen spec (the design contract — every screen, every state)
@@ -81,6 +81,8 @@ All screens: first-person (§2), fixed 1280×800 logical canvas, room hue per §
 - **Hierarchy:** the reading target is always the largest text on screen (≥40 px); the single terracotta action is always the next thing to do; exits are diegetic objects in the world (Dad's yawn, the book cover), never chrome.
 
 **R3.8** Scenes are built as **separated depth layers** (background / mid / foreground props / hands) with parallax on camera moves — 2.5D staging that makes first-person travel feel alive.
+
+**R3.11** Canvas fit (decision 2026-07-29, from the design handoff): the 1280×800 composition is the safe area, not a letterbox. Background layers carry ~80 px of vertical **bleed** (wall extends up, floor extends down); the canvas scales to fill the display's width and centers vertically, so taller displays (iPad 4:3, browser viewports) see bleed instead of bars. **Nothing interactive ever lives in the bleed.**
 
 **R3.10** Loop-exit availability (decision 2026-07-29): in every loop scene, the diegetic exit **appears only after the first completed item** — each scene guarantees at least one graded rep. During an active item (mic live, magnet mid-drag, audio playing) the exit is **dimmed and non-interactive**; it re-enables at item boundaries. A graced item counts as a completed boundary — the kid can always leave right after being rescued.
 
@@ -127,7 +129,7 @@ All mechanics are **frontier-driven**: they target whatever the graph says needs
 
 - **Target selection — the session's most instructionally live word:** (1) words missed-then-graced in the previous scene (Abuela's exchanges) → (2) the current frontier target's word → (3) a mastered-pool word (silent guard so the endless loop never stalls when 1–2 are exhausted; the kid gets an easy confidence word, and the exit stays *their* choice).
 - Dad is the scene's host and only character. He issues each prompt socially ("Write a note for Mamá — tell her we got the **beans**!") and **speaks the target word in English** before spelling starts. A small speaker button on the note card replays it any time.
-- **R4.4.2 — drag mechanics (numbers are normative):** padded hit box ≥ 96 px per magnet (larger than the sprite); on pickup the magnet scales to 1.1 and rides ~40 px above the finger; the next empty slot glows as the target; **magnetic snap radius ~120 px** on release; wrong letter sits one beat then wobbles back to the tray (no red X — the wobble is the feedback); a drop outside any slot returns that magnet only — **placed letters never reset**; **tap-tap alternative always live** (tap magnet → tap slot), not a mode; grading fires only on word completion (exact match). **Single-touch policy:** first touch wins — extra pointers during a drag are ignored (kids rest their other hand on the screen); on web, `setPointerCapture` on the dragged sprite and `touch-action: none` on the canvas so the browser never hijacks the drag as scroll/zoom.
+- **R4.4.2 — drag mechanics (numbers are normative):** padded hit box ≥ 96 px per magnet (larger than the sprite); on pickup the magnet scales to 1.1 and rides ~40 px above the finger; the next empty slot glows as the target; **magnetic snap radius ~120 px** on release; wrong letter sits one beat then wobbles back to the tray (no red X — the wobble is the feedback); a drop outside any slot returns that magnet only — **placed letters never reset**; **tap-tap alternative always live** (tap magnet → tap slot), not a mode; grading fires only on word completion (exact match). **Single-touch policy:** first touch wins — extra pointers during a drag are ignored (kids rest their other hand on the screen); on web, `setPointerCapture` on the dragged element and `touch-action: none` on the scene root so the browser never hijacks the drag as scroll/zoom.
 - **R4.4.1 — all-spoken scene:** Dad’s dialogue is voice-only. No speech bubbles, captions, or transcripts anywhere in the scene — showing his words would print the answer the kid is supposed to encode from sound. The only text on screen is the note being spelled and the tray letters. (Gloss/tap-hold does not apply here — there is no dialogue text to gloss.)
 - Magnet tray: **lowercase letters** (decision 2026-07-29 — matches every other reading surface; the grapheme shapes being graded are the ones being taught), the needed letters + ~4 distractors **including the confusable** (ea vs ee for beans). Misplaced letters wobble back to the tray; no red X (fiction absorption). Grading: exact string match after normalization (deterministic).
 - **This beat is a loop**: each completed note sticks on the fridge and Dad hands the next prompt, each new word drawn live from the (moving) frontier — words get harder as she gets better. Next word prefetched while the current one plays. Exit is diegetic: **Dad yawns theatrically — "Uy... ¡a dormir, mija!"** — styled as the scene's action button; tap → goodnight bit → bedroom transition.
@@ -225,9 +227,9 @@ Pipeline for spoken input:
 
 - Model: `claude-haiku-4-5`, structured output (JSON beat schema). Parse tolerantly — the model may wrap JSON in markdown fences; slice first `{` to last `}`.
 - **Story bible** (family, voices, humor register, warmth) + beat templates are authored constants. The LLM fills slots; it never invents structure.
-- **Build deliverables (agent-authored during implementation, human-reviewed after):** the story bible, the beat JSON schema + templates, per-word node mappings (§6.3), the ambient house audio loop (R8.4.3), and the baby babble clips (§13).
+- **Build deliverables (agent-authored during implementation, human-reviewed after):** the story bible, the beat JSON schema + templates, per-word node mappings (§6.3), the ambient house audio loop (R8.4.3), and the baby babble clips (§12).
 - Prompt inputs: beat template, frontier target node, validator vocabulary, independence band rule set, session word history (misses to resurface), seed.
-- **Thin proxy is MVP:** a minimal Node server holds the Anthropic + ElevenLabs keys and exposes two routes (`/generate`, `/tts`). Keys never ship to the browser (a web bundle is public source). No auth for demo; rate-limit by IP.
+- **Thin proxy is MVP:** a minimal Node server holds all three API keys (Anthropic, ElevenLabs, image-generation R4.2.4) and exposes three routes (`/generate`, `/tts`, `/image`). Keys never ship to the browser (a web bundle is public source). No auth for demo; rate-limit by IP.
 
 ### 8.2 Decodable-text validator
 
@@ -255,16 +257,16 @@ Deterministic gate: every generated sentence must use only graphemes/words from 
 
 | Layer | Pick |
 |---|---|
-| Target | **Desktop Chrome** (blessed demo target), landscape, fixed 1280×800 logical canvas scaled to fit; tablet = should-work/untested |
+| Target | **Desktop Chrome** (blessed demo target), landscape, fixed 1280×800 logical composition, fill-width with vertical bleed per R3.11; tablet = should-work/untested |
 | App shell | TypeScript + Vite; React for chrome/UI overlays (menus, message thread, debug overlay) |
-| Scene rendering | PixiJS (WebGL) — rooms, characters, transitions, magnet drag; one canvas, React overlays on top |
+| Scene rendering | **Inline SVG in the DOM** — the design mocks' SVG layers used near-verbatim; scene root scaled to fill viewport width with vertical background bleed (R3.11); React overlays on top. No canvas/WebGL engine |
 | Speech | Web Speech API (`SpeechRecognition`); grading posture per §7; mic is a hard gate (R3.4) |
 | Persistence | None. In-memory state, seeded from bundled `demo-state.json` each session; refresh = reset |
-| Animation | PixiJS tweens/transforms on static art; CSS transitions for chrome |
+| Animation | CSS keyframes / Web Animations API on SVG layer groups — **transform and opacity only** (compositor-composited); never animate paint/layout properties or anything inside a filtered subtree; waveforms and meters drawn programmatically |
 | Content | Anthropic API (Haiku-class) via thin proxy, structured output |
 | Voice | ElevenLabs API via thin proxy (runtime); no synthetic fallback — audio never degrades (§8.3) |
-| Proxy | Minimal Node endpoint (holds API keys, two routes: `/generate`, `/tts`) |
-| Art | AI-generated flat ink-line stills (§10), bundled PNG |
+| Proxy | Minimal Node endpoint (holds all three API keys, three routes: `/generate`, `/tts`, `/image`) |
+| Art | Hand-built layered SVG scenes (§10) — binding mocks in design/handoff/; layers used as SVG groups directly through the AssetStore seam (no export step on web) |
 
 ---
 
@@ -273,13 +275,13 @@ Deterministic gate: every generated sentence must use only graphemes/words from 
 Style: **cozy coloring book, richly lit** — hand-inked warm-brown line, chunky rounded volumes, blush cheeks, oversized heads. Gradients and soft shadows are welcome tools for depth, light, and atmosphere (decision 2026-07-29) — the ink outline remains the non-negotiable signature that keeps richness from drifting generic. No 3D rendering. Build note: shadows/glows live on the layer of the object that casts them, so they move together under parallax. Tone refs: Coco (multigenerational Mexican family warmth), Cleo & Cuquín (kid + baby energy).
 
 - **Line rules:** ink #6F4B35 only — 9–10 px silhouettes, 6–7 px interior lines, round caps, **clean confident curves** (no hand-shake/wobble effects; decision 2026-07-28).
-- **Pipeline:** characters and room scenes are AI-generated flat ink-line stills — one character sheet per family member (front, 3/4, 2–3 expressions, 2–3 poses) for consistency; rooms as wide landscape plates with clear interaction zones. Bundled as PNGs; animation is WebGL sprite transforms (bounce, slide, scale, parallax) on static art.
+- **Pipeline:** characters and room scenes are hand-built layered SVG (the binding mocks) — character consistency comes from the mocks' drawn cast (see design/handoff/); rooms are wide plates decomposed into §3.8 depth layers, used as SVG groups directly (no rasterization); animation is transform/opacity loops on the layer groups (bounce, slide, scale, parallax).
 - **First-person staging:** rooms are drawn facing the camera with characters addressing the viewer; Sofía exists on screen only as hands and held objects (list, basket, magnets, book) entering from the bottom of frame — her hands get the same ink-line treatment, red sleeve cuff as her signature.
 - **Skin tones (decision 2026-07-29):** family base **#D7AB87** (Sofía's hands, Mom, Dad, Abuela, wall-photo faces); the baby one step lighter, **#E4C29F**.
 - **Cast look:** Baby brother — bald, onesie (Cuquín energy). Mom, Dad, Abuela — Coco-warm, distinct silhouettes, blush always.
 - **Palette:** cream grounds (#FFFAF0 / #FDF3E3), ink #6F4B35, action terracotta #E0674A (the one primary action per screen, always ink-outlined); each room owns a hue under the same warm ink line (living room coral, kitchen butter-yellow, store mint, bedroom lavender).
-- **Screen designs are to be produced in a dedicated design session** against §3.1 (the per-screen contract) and this section's rules. No binding mocks exist; an archived earlier exploration lives in `docs/archive/` (third-person, pre-dates first person — reference for palette/tone only, not layout).
-- **MVP asset rule: functionality first.** Build every scene with programmatically drawn placeholder art (Pixi Graphics shapes following this section's palette + ink-line rules), loaded through a single `AssetStore` seam, so generated PNGs can replace placeholders later without touching scenes. Do not block any ticket on art.
+- **Binding mocks exist (2026-07-29):** four high-fidelity screens — Title, Living Room, Fridge, Bedroom — produced against §3.1 and this section, delivered as layered SVG/HTML in [design/handoff/](./design/handoff/) (see its README for tokens, states, and the iPad bleed rule). These supersede the archived third-person exploration in `docs/archive/` (palette/tone reference only).
+- **MVP asset rule: the design mocks are the art.** Scenes are built from the handoff mocks' SVG layers directly (they are production-grade vector art); no separate asset-export step exists on web. Keep each scene's layers as separable SVG groups behind a single `AssetStore` seam so future art revisions swap groups without touching logic.
 - **Type:** Baloo 2 (self-hosted woff2; SIL OFL — download the font files during the build) for everything in-game; fall back to a rounded system stack if unavailable; reading text ≥ 40 px at tablet size.
 
 ---

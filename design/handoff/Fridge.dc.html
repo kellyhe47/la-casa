@@ -1,0 +1,348 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@500;600;700;800&display=swap" rel="stylesheet">
+<style>
+body { margin:0; background:#F1E3CF; font-family:'Baloo 2', 'Comic Sans MS', system-ui, sans-serif; }
+a { color:#B3402F; } a:hover { color:#E0674A; }
+@keyframes bubblePop { from{ transform:scale(.7); opacity:0;} to{ transform:none; opacity:1;} }
+@keyframes wobbleBack { 0%{ transform:translate(0,-140px) rotate(0);} 40%{ transform:translate(0,-60px) rotate(-14deg);} 70%{ transform:translate(0,-14px) rotate(10deg);} 100%{ transform:translate(0,0) rotate(0);} }
+@keyframes stickPop { 0%{ transform:scale(1);} 40%{ transform:scale(1.12) rotate(-2deg);} 100%{ transform:scale(1) rotate(0);} }
+@keyframes magnetPulse { 0%,100%{ transform:scale(1);} 50%{ transform:scale(1.07);} }
+@keyframes speakerPing { 0%,100%{ transform:scale(1);} 50%{ transform:scale(1.12);} }
+@keyframes momIn { from{ transform:translateX(220px); opacity:0;} to{ transform:none; opacity:1;} }
+@keyframes yawnStretch { 0%{ transform:scale(1,.3);} 35%{ transform:scale(1,1);} 75%{ transform:scale(1,1);} 100%{ transform:scale(1,.3);} }
+@keyframes yawnTilt { 0%,100%{ transform:rotate(0);} 40%{ transform:rotate(-4deg);} 70%{ transform:rotate(-4deg);} }
+@keyframes steamRise { 0%{ transform:translateY(0); opacity:0;} 25%{ opacity:.85;} 100%{ transform:translateY(-26px); opacity:0;} }
+</style>
+</helmet>
+<div style="display:flex; flex-direction:column; align-items:center; gap:18px; padding:28px 20px 48px;">
+
+<div data-screen-label="Fridge — magnet spelling loop" style="position:relative; width:1280px; height:800px; border-radius:18px; overflow:hidden; background:#F6D992; box-shadow:0 10px 40px rgba(111,75,53,.25); flex:none;">
+  <svg viewBox="0 0 1280 800" width="1280" height="800" style="position:absolute; inset:0;">
+    <g stroke="#6F4B35" stroke-linecap="round" stroke-linejoin="round" fill="none">
+      <!-- butter-yellow kitchen wall + tile band -->
+      <rect x="-10" y="-10" width="1300" height="620" fill="#F6D992" stroke="none"></rect>
+      <rect x="-10" y="470" width="1300" height="140" fill="#FBE7A8" stroke="none"></rect>
+      <path d="M -10 472 H 1290" stroke-width="7"></path>
+      <path d="M 120 472 v 136 M 250 472 v 136 M 380 472 v 136 M 510 472 v 136 M 1030 472 v 136 M 1160 472 v 136" stroke-width="4" opacity="0.35"></path>
+      <path d="M -10 540 H 560 M 990 540 H 1290" stroke-width="4" opacity="0.35"></path>
+      <!-- floor -->
+      <rect x="-10" y="600" width="1300" height="210" fill="#C98A54" stroke="none"></rect>
+      <path d="M -10 602 H 1290" stroke-width="9"></path>
+      <path d="M 80 680 H 300 M 480 720 H 700 M 950 680 H 1180" stroke-width="5" opacity="0.3"></path>
+      <!-- stove, right of the fridge -->
+      <g id="stove">
+        <ellipse cx="1005" cy="738" rx="105" ry="16" fill="#6F4B35" opacity="0.15" stroke="none"></ellipse>
+        <!-- back panel + knobs -->
+        <rect x="916" y="440" width="180" height="60" rx="10" fill="#E8B96A" stroke-width="8"></rect>
+        <circle cx="948" cy="470" r="10" fill="#6F4B35" stroke="none"></circle>
+        <circle cx="984" cy="470" r="10" fill="#6F4B35" stroke="none"></circle>
+        <circle cx="1028" cy="470" r="10" fill="#6F4B35" stroke="none"></circle>
+        <circle cx="1064" cy="470" r="10" fill="#6F4B35" stroke="none"></circle>
+        <!-- body -->
+        <rect x="910" y="500" width="192" height="230" rx="14" fill="#FDF3E3" stroke-width="9"></rect>
+        <!-- cooktop + burners -->
+        <path d="M 914 526 h 184" stroke-width="6"></path>
+        <ellipse cx="962" cy="514" rx="30" ry="7" fill="#6F4B35" stroke="none"></ellipse>
+        <ellipse cx="1050" cy="514" rx="30" ry="7" fill="#6F4B35" stroke="none"></ellipse>
+        <!-- pot on the burner (dinner still warm) -->
+        <path d="M 938 470 h 48 q 6 24 -2 38 h -44 q -8 -14 -2 -38" fill="#E0674A" stroke-width="7"></path>
+        <path d="M 930 470 h 64" stroke-width="6"></path>
+        <g fill="none">
+          <path d="M 948 452 q 4 -10 -2 -18" stroke-width="6" style="animation:steamRise 2.4s ease-out infinite;"></path>
+          <path d="M 976 452 q 4 -10 -2 -18" stroke-width="6" style="animation:steamRise 2.4s 1.2s ease-out infinite;"></path>
+        </g>
+        <!-- oven door with window + towel -->
+        <rect x="930" y="548" width="152" height="140" rx="12" fill="#FBE7A8" stroke-width="7"></rect>
+        <rect x="950" y="572" width="112" height="80" rx="10" fill="#8A5B36" stroke-width="6"></rect>
+        <path d="M 938 556 h 136" stroke-width="6"></path>
+        <path d="M 1022 556 q -4 40 8 74 l -34 0 q 10 -36 6 -74 Z" fill="#9DBBA4" stroke-width="6"></path>
+      </g>
+      <!-- kitchen doorway, right: opening into the next room -->
+      <rect x="1140" y="112" width="150" height="490" fill="#E8B96A" stroke="none"></rect>
+      <!-- interior shadow just past the jamb -->
+      <path d="M 1140 112 h 44 v 490 h -44 Z" fill="#6F4B35" opacity="0.22" stroke="none"></path>
+      <path d="M 1184 112 h 30 v 490 h -30 Z" fill="#6F4B35" opacity="0.1" stroke="none"></path>
+      <!-- jamb outline: gates the wall from the next room, runs to the top edge -->
+      <path d="M 1140 602 V 112 M 1140 112 H 1290" stroke-width="10"></path>
+      <!-- window with papel-picado edge, left -->
+      <rect x="60" y="110" width="210" height="170" rx="12" fill="#3E4270" stroke-width="9"></rect>
+      <path d="M 165 110 v 170 M 60 195 h 210" stroke-width="7"></path>
+      <circle cx="120" cy="150" r="16" fill="#FDF3E3" stroke-width="6"></circle>
+      <circle cx="230" cy="240" r="3" fill="#FDF3E3" stroke="none"></circle>
+      <circle cx="90" cy="250" r="3" fill="#FDF3E3" stroke="none"></circle>
+      <rect x="50" y="284" width="230" height="14" rx="6" fill="#C98A54" stroke-width="7"></rect>
+      <!-- molcajete plant on the sill (family signature) -->
+      <path d="M 130 278 q 18 -6 36 0 l -4 -16 q -14 -6 -28 0 Z" fill="#9A8B7E" stroke-width="6"></path>
+      <path d="M 148 262 q -4 -14 4 -22 q 8 8 4 22 M 146 262 q -12 -6 -14 -16 q 10 0 14 16" fill="#7FA05C" stroke-width="4.5"></path>
+      <!-- THE FRIDGE, center stage close-up -->
+      <g id="fridge">
+        <ellipse cx="640" cy="742" rx="300" ry="26" fill="#6F4B35" opacity="0.18" stroke="none"></ellipse>
+        <rect x="390" y="60" width="500" height="680" rx="26" fill="#FDF3E3" stroke-width="11"></rect>
+        <path d="M 400 250 h 480" stroke-width="8"></path>
+        <!-- handles -->
+        <rect x="404" y="120" width="22" height="100" rx="10" fill="#C98A54" stroke-width="7"></rect>
+        <rect x="404" y="290" width="22" height="150" rx="10" fill="#C98A54" stroke-width="7"></rect>
+        <!-- freezer-door clutter: photo + lotería magnet -->
+        <g transform="rotate(-4 585 155)">
+          <rect x="540" y="110" width="90" height="74" rx="8" fill="#FFFAF0" stroke-width="6"></rect>
+          <circle cx="570" cy="140" r="12" fill="#D7AB87" stroke-width="4.5"></circle>
+          <circle cx="600" cy="142" r="9" fill="#E4C29F" stroke-width="4.5"></circle>
+          <path d="M 556 168 q 29 10 58 0" stroke-width="4"></path>
+          <circle cx="585" cy="112" r="7" fill="#E0674A" stroke-width="4.5"></circle>
+        </g>
+        <g transform="rotate(5 730 150)">
+          <rect x="700" y="116" width="60" height="70" rx="8" fill="#9DBBA4" stroke-width="6"></rect>
+          <path d="M 730 132 q 10 14 0 26 q -10 -12 0 -26" fill="#F2C066" stroke-width="4"></path>
+          <circle cx="730" cy="112" r="7" fill="#F2C066" stroke-width="4.5"></circle>
+        </g>
+      </g>
+      <!-- DAD, beside the fridge (Coco-warm, distinct silhouette) -->
+      <g id="dad" style="{{ dadStyle }}">
+        <ellipse cx="245" cy="748" rx="110" ry="16" fill="#6F4B35" opacity="0.18" stroke="none"></ellipse>
+        <!-- brown pants with cuffs + shoes -->
+        <path d="M 190 620 h 110 l 6 100 h -42 l -12 -62 l -12 62 h -44 Z" fill="#9A7B5A" stroke-width="8"></path>
+        <path d="M 194 700 h 40 M 258 700 h 40" stroke-width="5" opacity="0.5"></path>
+        <path d="M 186 720 q 24 -8 48 0 l 2 16 q -26 6 -52 0 Z" fill="#5A4436" stroke-width="7"></path>
+        <path d="M 256 720 q 24 -8 48 0 l 2 16 q -26 6 -52 0 Z" fill="#5A4436" stroke-width="7"></path>
+        <!-- green polo: torso, hem, short sleeves -->
+        <path d="M 172 636 q -12 -160 73 -166 q 85 6 73 166 q -73 14 -146 0" fill="#7FA05C" stroke-width="9"></path>
+        <path d="M 176 616 q 69 12 138 0" stroke-width="5" opacity="0.5"></path>
+        <!-- collar + placket + buttons -->
+        <path d="M 218 474 l 27 34 l 27 -34 l 12 12 l -39 40 l -39 -40 Z" fill="#6B8A4E" stroke-width="6"></path>
+        <path d="M 245 512 v 52" stroke-width="5"></path>
+        <circle cx="252" cy="530" r="3.5" fill="#6F4B35" stroke="none"></circle>
+        <circle cx="252" cy="550" r="3.5" fill="#6F4B35" stroke="none"></circle>
+        <!-- chest pocket -->
+        <path d="M 196 540 h 30 v 24 h -30 Z" fill="#6B8A4E" stroke-width="5"></path>
+        <!-- short sleeves + forearms -->
+        <path d="M 200 480 q -48 12 -52 78 q 16 14 34 8 q 0 -48 18 -86 Z M 290 480 q 48 12 52 78 q -16 14 -34 8 q 0 -48 -18 -86 Z" fill="#7FA05C" stroke-width="8"></path>
+        <path d="M 152 566 q -10 40 4 74" fill="none" stroke="#D7AB87" stroke-width="13"></path>
+        <circle cx="158" cy="648" r="14" fill="#D7AB87" stroke-width="7"></circle>
+        <sc-if value="{{ dadSmile }}" hint-placeholder-val="{{ true }}">
+          <path d="M 338 566 q 10 40 -4 74" fill="none" stroke="#D7AB87" stroke-width="13"></path>
+          <circle cx="332" cy="648" r="14" fill="#D7AB87" stroke-width="7"></circle>
+        </sc-if>
+        <!-- head -->
+        <circle cx="245" cy="420" r="62" fill="#D7AB87" stroke-width="9"></circle>
+        <!-- tousled dark hair (reference: swept, choppy fringe) -->
+        <path d="M 184 412 q -6 -56 44 -64 q 8 -12 26 -8 q 34 -12 52 16 q 16 14 8 42 q -6 -12 -18 -14 q 2 -12 -10 -18 q -4 10 -16 10 q 4 -12 -6 -18 q -10 14 -30 12 q -22 -2 -30 14 q -12 8 -20 28" fill="#5A4436" stroke-width="7"></path>
+        <!-- ears -->
+        <circle cx="182" cy="424" r="11" fill="#D7AB87" stroke-width="6"></circle>
+        <circle cx="308" cy="424" r="11" fill="#D7AB87" stroke-width="6"></circle>
+        <!-- brows, happy closed eyes, mustache, open smile, blush -->
+        <path d="M 208 388 q 10 -7 20 -3 M 262 385 q 10 -4 20 3" stroke-width="4.5"></path>
+        <path d="M 212 408 q 8 -10 16 0 M 262 408 q 8 -10 16 0" stroke-width="5"></path>
+        <path d="M 220 440 q 11 -10 25 -4 q 14 -6 25 4 q -11 9 -25 6 q -14 3 -25 -6" fill="#5A4436" stroke-width="4.5"></path>
+        <sc-if value="{{ dadYawn }}" hint-placeholder-val="{{ false }}">
+          <g style="animation:yawnStretch 2.2s ease-in-out infinite; transform-origin:245px 452px;">
+            <ellipse cx="245" cy="460" rx="14" ry="18" fill="#8A3B2A" stroke-width="4.5"></ellipse>
+          </g>
+          <g style="animation:yawnTilt 2.2s ease-in-out infinite; transform-origin:316px 648px;">
+            <path d="M 332 560 q 22 30 -30 96" fill="none" stroke="#D7AB87" stroke-width="13"></path>
+            <circle cx="300" cy="658" r="14" fill="#D7AB87" stroke-width="7"></circle>
+          </g>
+        </sc-if>
+        <sc-if value="{{ dadSmile }}" hint-placeholder-val="{{ true }}">
+          <path d="M 228 452 q 17 4 34 0 q -4 17 -17 17 q -13 0 -17 -17" fill="#8A3B2A" stroke-width="4.5"></path>
+          <path d="M 236 462 q 9 5 18 0 q -3 6 -9 6 q -6 0 -9 -6" fill="#F2A9A0" stroke="none"></path>
+        </sc-if>
+        <circle cx="194" cy="436" r="8" fill="#F2A9A0" stroke="none"></circle>
+        <circle cx="296" cy="436" r="8" fill="#F2A9A0" stroke="none"></circle>
+      </g>
+    </g>
+  </svg>
+
+  <!-- completed notes accumulating on the door (fiction progress, R11.6) -->
+  <sc-for list="{{ stuckNotes }}" as="note" hint-placeholder-count="2">
+    <div style="{{ note.style }}">
+      <div style="position:absolute; left:50%; top:-8px; transform:translateX(-50%); width:16px; height:16px; border-radius:999px; border:5px solid #6F4B35; background:{{ note.magnet }}; box-sizing:border-box;"></div>
+      <span style="font-family:'Baloo 2'; font-weight:800; font-size:28px; color:#6F4B35;">{{ note.word }}</span>
+    </div>
+  </sc-for>
+  <!-- THE NOTE CARD on the fridge door: word slots + speaker -->
+  <sc-if value="{{ showNote }}" hint-placeholder-val="{{ true }}">
+    <div style="position:absolute; left:640px; top:300px; transform:translateX(-50%); display:flex; flex-direction:column; align-items:center; gap:12px;">
+      <div style="background:#FFFAF0; border:6px solid #6F4B35; border-radius:18px; padding:18px 26px 22px; display:flex; flex-direction:column; gap:14px; align-items:center; box-shadow:0 5px 0 #6F4B35;">
+        <div style="display:flex; align-items:center; gap:12px;">
+          <div style="font-weight:700; font-size:22px; color:#8A5B36;">para Mamá:</div>
+          <button onClick="{{ replay }}" title="Escuchar otra vez" style="{{ speakerStyle }}">
+            <svg viewBox="0 0 20 20" width="26" height="26"><path d="M 4 8 h 4 l 5 -4 v 12 l -5 -4 h -4 Z" fill="#FFFAF0" stroke="#FFFAF0" stroke-width="1.4" stroke-linejoin="round"></path><path d="M 15 7 q 3 3 0 6" fill="none" stroke="#FFFAF0" stroke-width="1.8" stroke-linecap="round"></path></svg>
+          </button>
+        </div>
+        <div style="display:flex; gap:10px;">
+          <sc-for list="{{ slots }}" as="slot" hint-placeholder-count="5">
+            <div style="{{ slot.style }}">{{ slot.letter }}</div>
+          </sc-for>
+        </div>
+      </div>
+    </div>
+  </sc-if>
+
+  <!-- Dad's prompt bubble -->
+  <sc-if value="{{ showDadBubble }}" hint-placeholder-val="{{ true }}">
+    <div style="position:absolute; left:330px; top:150px; max-width:400px; animation:bubblePop .3s ease-out;">
+      <div style="background:#FFFAF0; border:6px solid #6F4B35; border-radius:24px 24px 24px 8px; padding:12px 20px; font-weight:700; font-size:25px; color:#6F4B35;">🔊 {{ dadText }}</div>
+    </div>
+  </sc-if>
+
+  <!-- ¡A dormir! — Mom at the door IS the action button -->
+  <sc-if value="{{ showADormir }}" hint-placeholder-val="{{ true }}">
+    <button onClick="{{ aDormir }}" style="position:absolute; right:36px; bottom:70px; font-family:'Baloo 2'; font-weight:800; font-size:26px; color:#FFFAF0; background:#E0674A; border:7px solid #6F4B35; border-radius:999px; padding:12px 28px; cursor:pointer; box-shadow:0 6px 0 #6F4B35;" style-hover="{ background:'#C0492F' }">¡A dormir!</button>
+  </sc-if>
+
+  <!-- SOFÍA'S HANDS + MAGNET TRAY, bottom center (the instrument) -->
+  <div style="position:absolute; left:0; right:0; bottom:0; display:flex; justify-content:center; pointer-events:none;">
+    <svg viewBox="0 0 900 210" width="900" height="210" style="overflow:visible;">
+      <g stroke="#6F4B35" stroke-linecap="round" stroke-linejoin="round" fill="none">
+        <rect x="90" y="36" width="720" height="166" rx="20" fill="#C98A54" stroke-width="10"></rect>
+        <rect x="110" y="54" width="680" height="130" rx="14" fill="#E8B96A" stroke-width="6"></rect>
+        <!-- left hand + red cuff -->
+        <path d="M 96 210 q -8 -56 26 -80 q 24 -16 48 -4 l 20 12 q 14 9 6 22 q -8 12 -22 6 l -18 -10 q 20 24 12 54 Z" fill="#D7AB87" stroke-width="9"></path>
+        <path d="M 58 210 q -2 -24 20 -34 l 36 0 q 18 10 14 34 Z" fill="#B3402F" stroke-width="9"></path>
+        <!-- right hand + red cuff -->
+        <path d="M 804 210 q 8 -56 -26 -80 q -24 -16 -48 -4 l -20 12 q -14 9 -6 22 q 8 12 22 6 l 18 -10 q -20 24 -12 54 Z" fill="#D7AB87" stroke-width="9"></path>
+        <path d="M 842 210 q 2 -24 -20 -34 l -36 0 q -18 10 -14 34 Z" fill="#B3402F" stroke-width="9"></path>
+      </g>
+    </svg>
+    <!-- magnets sit on the tray -->
+    <div style="position:absolute; left:50%; bottom:60px; transform:translateX(-50%); display:flex; gap:14px; pointer-events:auto;">
+      <sc-for list="{{ magnets }}" as="m" hint-placeholder-count="9">
+        <button onClick="{{ m.tap }}" style="{{ m.style }}">{{ m.letter }}</button>
+      </sc-for>
+    </div>
+  </div>
+</div>
+
+<!-- state rail + notes -->
+<div style="width:1280px; display:flex; flex-direction:column; gap:12px;">
+  <div style="display:flex; flex-wrap:wrap; gap:8px; align-items:center;">
+    <span style="font-weight:800; font-size:16px; color:#6F4B35; margin-right:4px;">State:</span>
+    <sc-for list="{{ stateButtons }}" as="st" hint-placeholder-count="6">
+      <button onClick="{{ st.pick }}" style="{{ st.style }}">{{ st.label }}</button>
+    </sc-for>
+    <a href="Living Room.dc.html" style="margin-left:auto; font-weight:700; font-size:15px;">← Living room</a>
+    <a href="Bedroom.dc.html" style="font-weight:700; font-size:15px;">Bedroom →</a>
+  </div>
+  <div style="font-size:15px; line-height:1.5; color:#6F4B35; background:#FDF3E3; border:3px solid #E4C9A8; border-radius:14px; padding:12px 16px;">
+    <strong>Camera:</strong> enters from the living room (P0 rail: Living room → Fridge → Bedroom), faces the fridge door close-up; exits via the goodnight bit into the bedroom transition. ·
+    <strong>Layers:</strong> wall/tile · fridge+notes · Dad/Mom · hands+tray. ·
+    <strong>§4.4:</strong> wait → prompt (Dad speaks “beans”, speaker replays) → dragging (tap a magnet to place it — wrong letters wobble back to the tray, no red X) → note sticks on the door → next prompt. Tray holds the needed letters + distractors incl. the EA/EE confusable. Exit (diegetic): Dad yawns theatrically — “Uy… ¡a dormir, mija!” — the ¡A dormir! button plays the goodnight bit, then the bedroom transition. Magnets: wide snap radius, tap-tap fallback, progress never resets (§3.9). ·
+    <strong>Audio-only prompts:</strong> in the real game Dad's prompt is SPOKEN, never displayed — the kid hears “write: I love you” and must spell it from sound alone (that's the point of the mechanic). The bubbles in this mock are annotations, not UI text. The speaker button replays Dad's audio.
+  </div>
+</div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props="{&quot;$preview&quot;:{&quot;width&quot;:1320,&quot;height&quot;:1040}}">
+class Component extends DCLogic {
+  state = { st: 'prompt', placed: [], wobble: null, notes: [] };
+  target = 'beans';
+  trayLetters = ['b','e','a','n','s','e','e','r','t'];
+  tapMagnet(i) {
+    const need = this.target[this.state.placed.length];
+    const letter = this.trayLetters[i];
+    if (this.state.placed.includes(i)) return;
+    if (letter === need) {
+      const placed = [...this.state.placed, i];
+      const done = placed.length === this.target.length;
+      this.setState({ placed, wobble: null, st: done ? 'stick' : 'dragging' });
+      if (done) this._t = setTimeout(() => this.setState({ st: 'next', placed: [], notes: [...this.state.notes, this.target] }), 1600);
+    } else {
+      this.setState({ wobble: i, st: 'dragging' });
+      this._w = setTimeout(() => this.setState({ wobble: null }), 900);
+    }
+  }
+  componentWillUnmount() { clearTimeout(this._t); clearTimeout(this._w); }
+  renderVals() {
+    const st = this.state.st;
+    const has = (...xs) => xs.includes(st);
+    const order = ['wait','prompt','dragging','stick','next','goodnight'];
+    const labels = { wait:'1 wait (living scene)', prompt:'2 prompt (Dad speaks)', dragging:'3 dragging', stick:'4 note sticks', next:'5 next prompt', goodnight:'6 goodnight bit (Dad yawns)' };
+    const word = this.target;
+    const placedLetters = this.state.placed.map(i => this.trayLetters[i]);
+    const noteSpots = [
+      { x: 412, y: 496, r: -3, magnet: '#E0674A' },
+      { x: 716, y: 496, r: 4, magnet: '#9DBBA4' },
+      { x: 486, y: 566, r: -2, magnet: '#F2C066' },
+      { x: 652, y: 570, r: 2, magnet: '#B39ECF' },
+    ];
+    return {
+      dadText: st === 'goodnight' ? '“Uy… ¡a dormir, mija!” 🥱'
+        : st === 'next'
+        ? '“¡Perfecto! Otra nota — tell her we got the cheese!”'
+        : '“Write a note for Mamá — tell her we got the beans!”',
+      showDadBubble: has('prompt','dragging','stick','next','goodnight'),
+      dadStyle: {},
+      dadYawn: has('goodnight'),
+      dadSmile: !has('goodnight'),
+      showNote: !has('wait'),
+      showADormir: has('dragging','stick','next','prompt'),
+      aDormir: () => {
+        this.setState({ st: 'goodnight' });
+        this._g = setTimeout(() => { window.location.href = 'Bedroom.dc.html'; }, 1800);
+      },
+      replay: () => {},
+      speakerStyle: {
+        width: '52px', height: '52px', borderRadius: '999px', cursor: 'pointer', border: '5px solid #6F4B35',
+        background: '#E0674A', display: 'grid', placeItems: 'center',
+        animation: has('prompt') ? 'speakerPing 1.4s ease-in-out infinite' : 'none',
+      },
+      slots: word.split('').map((ch, i) => ({
+        letter: has('stick','next') || i < placedLetters.length ? (has('stick') || i < placedLetters.length ? (placedLetters[i] ?? ch) : '') : '',
+        style: {
+          width: '58px', height: '68px', borderRadius: '12px', display: 'grid', placeItems: 'center',
+          fontFamily: "'Baloo 2'", fontWeight: 800, fontSize: '40px', color: '#6F4B35',
+          background: i < placedLetters.length || has('stick') ? '#FBE7A8' : '#FDF3E3',
+          border: i < placedLetters.length || has('stick') ? '4px solid #6F4B35' : '4px dashed #C98A54',
+          animation: has('stick') ? 'stickPop .5s ease-out' : 'none',
+        },
+      })),
+      magnets: this.trayLetters.map((letter, i) => ({
+        letter,
+        tap: () => this.tapMagnet(i),
+        style: {
+          width: '62px', height: '62px', borderRadius: '14px', cursor: 'pointer',
+          fontFamily: "'Baloo 2'", fontWeight: 800, fontSize: '34px', color: '#6F4B35',
+          background: ['#E8917A','#F2C066','#9DBBA4','#B39ECF','#E0674A'][i % 5],
+          border: '5px solid #6F4B35', boxShadow: '0 4px 0 #6F4B35',
+          visibility: this.state.placed.includes(i) ? 'hidden' : 'visible',
+          animation: this.state.wobble === i ? 'wobbleBack .9s ease-out' : has('prompt') && letter === 'b' ? 'magnetPulse 1.6s ease-in-out infinite' : 'none',
+        },
+      })),
+      stuckNotes: this.state.notes.map((w, i) => {
+        const s = noteSpots[i % noteSpots.length];
+        return {
+          word: w, magnet: s.magnet,
+          style: {
+            position: 'absolute', left: s.x + 'px', top: s.y + 'px', width: '150px', height: '64px',
+            boxSizing: 'border-box', background: '#FFFAF0', border: '5px solid #6F4B35', borderRadius: '10px',
+            display: 'grid', placeItems: 'center', transform: 'rotate(' + s.r + 'deg)',
+            animation: i === this.state.notes.length - 1 && has('next') ? 'stickPop .6s ease-out' : 'none',
+          },
+        };
+      }),
+      stateButtons: order.map(k => ({
+        label: labels[k],
+        pick: () => this.setState({ st: k, placed: k === 'stick' ? [0,1,2,3,4] : [], wobble: null }),
+        style: {
+          fontFamily: "'Baloo 2'", fontWeight: 700, fontSize: '15px', cursor: 'pointer',
+          padding: '7px 14px', borderRadius: '999px', border: '3px solid #6F4B35',
+          background: st === k ? '#E0674A' : '#FFFAF0',
+          color: st === k ? '#FFFAF0' : '#6F4B35',
+        },
+      })),
+    };
+  }
+}
+</script>
+</body>
+</html>

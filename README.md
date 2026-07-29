@@ -4,7 +4,7 @@ A web literacy game for Spanish-speaking Grade-2 learners, built around a family
 
 ## Contents
 
-- `PRD.md` — the spec: PixiJS/WebGL scenes + React chrome, Web Speech API grading posture, thin key proxy, theme packs, no persistence
+- `PRD.md` — the spec: DOM/SVG scenes (the design mocks' SVG used near-verbatim) + React chrome, Web Speech API grading posture, thin key proxy, no persistence
 - `CONTEXT.md` — domain glossary; the terms are load-bearing
 - `idea.md` — original concept (PRD's source)
 - `docs/adr/0001-llm-never-grades.md` — deterministic grading, applies verbatim

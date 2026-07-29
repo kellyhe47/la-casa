@@ -1,0 +1,473 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@500;600;700;800&display=swap" rel="stylesheet">
+<style>
+body { margin:0; background:#F1E3CF; font-family:'Baloo 2', 'Comic Sans MS', system-ui, sans-serif; }
+a { color:#B3402F; } a:hover { color:#E0674A; }
+@keyframes micPulse { 0%,100%{ transform:scale(1);} 50%{ transform:scale(1.08);} }
+@keyframes waveA { 0%,100%{ height:10px;} 50%{ height:26px;} }
+@keyframes waveB { 0%,100%{ height:20px;} 50%{ height:7px;} }
+@keyframes babyBounce { 0%,100%{ transform:translateY(0);} 50%{ transform:translateY(-8px);} }
+@keyframes babyChew { 0%,100%{ transform:rotate(0deg);} 50%{ transform:rotate(4deg);} }
+@keyframes mobileSway { 0%,100%{ transform:rotate(-6deg);} 50%{ transform:rotate(6deg);} }
+@keyframes starTwinkle { 0%,100%{ opacity:1;} 50%{ opacity:0.3;} }
+@keyframes bubblePop { from{ transform:scale(.7); opacity:0;} to{ transform:none; opacity:1;} }
+@keyframes momEnter { from{ transform:translate(-420px,0); } to{ transform:translate(0,0); } }
+@keyframes momLeave { from{ transform:translate(0,0); opacity:1; } to{ transform:translate(-420px,0); opacity:0; } }
+@keyframes legSwingA { 0%,100%{ transform:rotate(14deg);} 50%{ transform:rotate(-14deg);} }
+@keyframes legSwingB { 0%,100%{ transform:rotate(-14deg);} 50%{ transform:rotate(14deg);} }
+@keyframes pageIn { from{ transform:translateX(60px); opacity:0;} to{ transform:none; opacity:1;} }
+@keyframes giggleWiggle { 0%,100%{ transform:rotate(0);} 25%{ transform:rotate(-5deg);} 75%{ transform:rotate(5deg);} }
+@keyframes lightsDim { from{ opacity:0;} to{ opacity:0.75;} }
+@keyframes zzz { 0%{ transform:translateY(0); opacity:0;} 30%{ opacity:1;} 100%{ transform:translateY(-30px); opacity:0;} }
+</style>
+</helmet>
+<div style="display:flex; flex-direction:column; align-items:center; gap:18px; padding:28px 20px 48px;">
+
+<div data-screen-label="Bedroom — baby read-aloud loop" style="position:relative; width:1280px; height:800px; border-radius:18px; overflow:hidden; background:#B9AECF; box-shadow:0 10px 40px rgba(111,75,53,.25); flex:none;">
+  <svg viewBox="0 0 1280 800" width="1280" height="800" style="position:absolute; inset:0;">
+    <defs>
+      <radialGradient id="lampGlow" cx="0.5" cy="0.5" r="0.5">
+        <stop offset="0" stop-color="#FFD873" stop-opacity="0.75"></stop>
+        <stop offset="0.55" stop-color="#F2C066" stop-opacity="0.35"></stop>
+        <stop offset="1" stop-color="#F2C066" stop-opacity="0"></stop>
+      </radialGradient>
+      <linearGradient id="wallDim" x1="0" y1="0" x2="0" y2="1">
+        <stop offset="0" stop-color="#4A4468" stop-opacity="0.35"></stop>
+        <stop offset="1" stop-color="#4A4468" stop-opacity="0"></stop>
+      </linearGradient>
+    </defs>
+    <g stroke="#6F4B35" stroke-linecap="round" stroke-linejoin="round" fill="none">
+      <!-- ===== BG: lavender wall, dim ===== -->
+      <rect x="-10" y="-10" width="1300" height="580" fill="#B9AECF" stroke="none"></rect>
+      <rect x="-10" y="-10" width="1300" height="580" fill="url(#wallDim)" stroke="none"></rect>
+      <!-- wainscoting: lighter lavender panel band with chair rail -->
+      <rect x="-10" y="440" width="1300" height="130" fill="#C6BCDC" stroke="none"></rect>
+      <path d="M -10 442 H 1290" stroke-width="7"></path>
+      <path d="M -10 462 H 1290" stroke-width="4" opacity="0.35"></path>
+      <g stroke-width="5" opacity="0.55">
+        <rect x="40" y="480" width="150" height="66" rx="8"></rect>
+        <rect x="240" y="480" width="150" height="66" rx="8"></rect>
+        <rect x="440" y="480" width="150" height="66" rx="8"></rect>
+        <rect x="640" y="480" width="150" height="66" rx="8"></rect>
+        <rect x="840" y="480" width="150" height="66" rx="8"></rect>
+        <rect x="1040" y="480" width="150" height="66" rx="8"></rect>
+      </g>
+      <!-- wooden floor -->
+      <rect x="-10" y="570" width="1300" height="240" fill="#C98A54" stroke="none"></rect>
+      <path d="M -10 572 H 1290" stroke-width="9"></path>
+      <path d="M 40 640 H 260 M 420 610 H 620 M 900 640 H 1140 M 200 760 H 420 M 700 720 H 920 M 1040 770 H 1240" stroke-width="5" opacity="0.3"></path>
+      <!-- night window -->
+      <rect x="80" y="90" width="230" height="200" rx="14" fill="#3E4270" stroke-width="9"></rect>
+      <path d="M 195 90 v 200 M 80 190 h 230" stroke-width="7"></path>
+      <circle cx="150" cy="140" r="22" fill="#FDF3E3" stroke-width="7"></circle>
+      <circle cx="142" cy="134" r="4" fill="#E4D9C3" stroke="none"></circle>
+      <g fill="#FDF3E3" stroke="none">
+        <circle cx="250" cy="120" r="3.5" style="animation:starTwinkle 2.6s infinite;"></circle>
+        <circle cx="270" cy="230" r="3" style="animation:starTwinkle 3.2s .6s infinite;"></circle>
+        <circle cx="115" cy="240" r="3.5" style="animation:starTwinkle 2.8s .3s infinite;"></circle>
+        <circle cx="225" cy="160" r="2.6" style="animation:starTwinkle 3s .9s infinite;"></circle>
+      </g>
+      <!-- curtains (matching the living room's, in bedroom lavender) -->
+      <path d="M 78 96 q 16 66 -3 208 q 32 -6 45 4 q 4 -116 -7 -212 Z" fill="#8E86AC" stroke-width="9"></path>
+      <path d="M 312 96 q -16 66 3 208 q -32 -6 -45 4 q -4 -116 7 -212 Z" fill="#8E86AC" stroke-width="9"></path>
+      <path d="M 64 92 H 326" stroke-width="10"></path>
+      <path d="M 97 148 q 6 44 0 108 M 293 148 q -6 44 0 108" stroke-width="6" opacity="0.6"></path>
+
+      <!-- wall art: crescent + clouds -->
+      <path d="M 478 116 a 48 48 0 1 0 24 90 a 52 52 0 1 1 -24 -90 Z" fill="#F2C066" stroke-width="7" transform="rotate(24 478 160)"></path>
+      <path d="M 560 214 q -2 -16 16 -18 q 4 -14 22 -12 q 16 2 18 16 q 16 0 14 16 q -2 12 -16 12 l -40 0 q -14 -2 -14 -14" fill="#FDF3E3" stroke-width="6"></path>
+      <!-- string of stars over the crib: wall pegs, twisted cord, knots -->
+      <circle cx="760" cy="108" r="6" fill="#8A5B36" stroke-width="5"></circle>
+      <circle cx="1020" cy="108" r="6" fill="#8A5B36" stroke-width="5"></circle>
+      <path d="M 760 110 Q 890 150 1020 110" stroke-width="5"></path>
+      <path d="M 772 116 q 6 -6 10 2 M 838 130 q 6 -6 10 2 M 906 136 q 6 -6 10 2 M 972 126 q 6 -6 10 2" stroke-width="3.5" opacity="0.5"></path>
+      <path d="M 800 122 v 8 M 860 134 v 8 M 920 138 v 8 M 980 128 v 8" stroke-width="4"></path>
+      <circle cx="800" cy="122" r="3.5" fill="#8A5B36" stroke="none"></circle>
+      <circle cx="860" cy="134" r="3.5" fill="#8A5B36" stroke="none"></circle>
+      <circle cx="920" cy="138" r="3.5" fill="#8A5B36" stroke="none"></circle>
+      <circle cx="980" cy="128" r="3.5" fill="#8A5B36" stroke="none"></circle>
+      <g stroke-width="4.5">
+        <path d="M 796 124 l 6 12 l 13 2 l -9 9 l 2 13 l -12 -6 l -12 6 l 2 -13 l -9 -9 l 13 -2 Z" fill="#F2C066"></path>
+        <path d="M 856 138 l 6 12 l 13 2 l -9 9 l 2 13 l -12 -6 l -12 6 l 2 -13 l -9 -9 l 13 -2 Z" fill="#E8917A"></path>
+        <path d="M 916 142 l 6 12 l 13 2 l -9 9 l 2 13 l -12 -6 l -12 6 l 2 -13 l -9 -9 l 13 -2 Z" fill="#F2C066"></path>
+        <path d="M 976 132 l 6 12 l 13 2 l -9 9 l 2 13 l -12 -6 l -12 6 l 2 -13 l -9 -9 l 13 -2 Z" fill="#9DBBA4"></path>
+      </g>
+      <!-- shelf with family clutter -->
+      <rect x="440" y="300" width="300" height="14" rx="6" fill="#8A5B36" stroke-width="7"></rect>
+      <!-- Virgen candle (family signature, carried from living room) -->
+      <rect x="466" y="252" width="34" height="48" rx="8" fill="#FDF3E3" stroke-width="6"></rect>
+      <path d="M 483 252 v -8 M 483 240 q 6 8 0 12 q -6 -4 0 -12" fill="#F2C066" stroke-width="4"></path>
+      <path d="M 474 268 q 9 -8 18 0 q -9 10 -18 0" fill="#9DBBA4" stroke-width="3.5"></path>
+      <!-- stacked bedtime books -->
+      <rect x="530" y="284" width="80" height="16" rx="5" fill="#E8917A" stroke-width="6"></rect>
+      <rect x="538" y="268" width="70" height="16" rx="5" fill="#9DBBA4" stroke-width="6"></rect>
+      <rect x="546" y="252" width="58" height="16" rx="5" fill="#F2C066" stroke-width="6"></rect>
+      <!-- lotería-card frame: El Sol -->
+      <rect x="646" y="234" width="58" height="66" rx="8" fill="#FDF3E3" stroke-width="6"></rect>
+      <circle cx="675" cy="260" r="13" fill="#F2C066" stroke-width="5"></circle>
+      <path d="M 675 242 v -6 M 675 278 v 6 M 659 260 h -6 M 691 260 h 6 M 664 249 l -5 -5 M 686 271 l 5 5 M 686 249 l 5 -5 M 664 271 l -5 5" stroke-width="4"></path>
+      <!-- nightstand + lamp (light source #1) -->
+      <ellipse cx="220" cy="404" rx="135" ry="110" fill="url(#lampGlow)" stroke="none"></ellipse>
+      <rect x="150" y="470" width="140" height="110" rx="12" fill="#8A5B36" stroke-width="8"></rect>
+      <rect x="166" y="492" width="108" height="30" rx="8" fill="#C98A54" stroke-width="6"></rect>
+      <circle cx="220" cy="507" r="6" fill="#F2C066" stroke-width="4"></circle>
+      <!-- taller lamp: shade, stem, triangular base -->
+      <path d="M 192 368 h 56 l 14 44 h -84 Z" fill="#F6E3B8" stroke-width="7"></path>
+      <path d="M 220 412 v 44" stroke-width="6"></path>
+      <path d="M 220 456 l -26 14 h 52 Z" fill="#8A5B36" stroke-width="7"></path>
+      <!-- baby bottle on nightstand -->
+      <rect x="264" y="438" width="22" height="34" rx="8" fill="#FDF3E3" stroke-width="5"></rect>
+      <path d="M 268 438 q 7 -10 14 0" fill="#E8917A" stroke-width="5"></path>
+      <!-- ===== CRIB + BABY, center stage ===== -->
+      <g id="crib">
+        <ellipse cx="880" cy="640" rx="270" ry="30" fill="#6F4B35" opacity="0.18" stroke="none"></ellipse>
+        <!-- back corner posts -->
+        <rect x="654" y="316" width="20" height="180" rx="9" fill="#8A5B36" stroke-width="7"></rect>
+        <rect x="1086" y="316" width="20" height="180" rx="9" fill="#8A5B36" stroke-width="7"></rect>
+        <circle cx="664" cy="310" r="11" fill="#8A5B36" stroke-width="6"></circle>
+        <circle cx="1096" cy="310" r="11" fill="#8A5B36" stroke-width="6"></circle>
+        <!-- back rail + slats down to the mattress -->
+        <rect x="668" y="330" width="424" height="18" rx="9" fill="#C98A54" stroke-width="8"></rect>
+        <path d="M 720 348 v 128 M 774 348 v 128 M 828 348 v 128 M 880 348 v 128 M 932 348 v 128 M 986 348 v 128 M 1040 348 v 128" stroke-width="7"></path>
+        <!-- mattress -->
+        <rect x="640" y="462" width="480" height="76" rx="18" fill="#FDF3E3" stroke-width="8"></rect>
+        <path d="M 680 500 q 20 -10 40 0 M 760 502 q 20 -10 40 0 M 1000 500 q 20 -10 40 0" stroke-width="4" opacity="0.4"></path>
+      </g>
+      <!-- mobile above crib -->
+      <g style="animation:mobileSway 4s ease-in-out infinite; transform-origin:880px 150px;">
+        <!-- ceiling hook + cord -->
+        <circle cx="880" cy="144" r="5" fill="#8A5B36" stroke-width="4"></circle>
+        <path d="M 880 150 v 28" stroke-width="6"></path>
+        <!-- crossed arms with upturned tips -->
+        <path d="M 818 200 q 62 -34 124 0 M 818 200 q -6 -2 -8 -8 M 942 200 q 6 -2 8 -8" stroke-width="6"></path>
+        <path d="M 838 178 q 42 -16 84 0" stroke-width="5" opacity="0.6"></path>
+        <!-- strings with beads -->
+        <path d="M 828 200 v 24 M 856 186 v 34 M 880 182 v 42 M 904 186 v 34 M 932 200 v 24" stroke-width="4"></path>
+        <circle cx="828" cy="214" r="3" fill="#F2C066" stroke="none"></circle>
+        <circle cx="880" cy="204" r="3" fill="#E8917A" stroke="none"></circle>
+        <circle cx="932" cy="214" r="3" fill="#9DBBA4" stroke="none"></circle>
+        <!-- hanging charms: heart, moon, sun, star, cloud -->
+        <path d="M 828 226 q -10 8 -6 16 q 8 6 14 -2 q 6 8 14 2 q 4 -8 -6 -16 l -8 -6 Z" fill="#F2C066" stroke-width="4.5"></path>
+        <path d="M 854 220 a 12 12 0 1 0 8 21 a 9 9 0 1 1 -8 -21 Z" fill="#FDF3E3" stroke-width="4.5"></path>
+        <circle cx="880" cy="236" r="11" fill="#E8917A" stroke-width="4.5"></circle>
+        <path d="M 880 222 v -4 M 880 250 v 4 M 866 236 h -4 M 894 236 h 4 M 871 227 l -3 -3 M 889 245 l 3 3 M 889 227 l 3 -3 M 871 245 l -3 3" stroke-width="3"></path>
+        <path d="M 904 222 l 4 8 l 9 1 l -6 6 l 1 9 l -8 -4 l -8 4 l 1 -9 l -6 -6 l 9 -1 Z" fill="#B39ECF" stroke-width="4"></path>
+        <path d="M 924 226 q -8 6 -6 14 q 7 5 12 -2 q 5 7 12 2 q 2 -8 -6 -14 l -6 -5 Z" fill="#9DBBA4" stroke-width="4.5"></path>
+      </g>
+      <!-- BABY (Nina): bald, onesie, facing camera, oversized head -->
+      <g id="baby" style="{{ babyStyle }}">
+        <!-- body / onesie: cream with polka dots -->
+        <path d="M 830 470 q 0 -40 50 -40 q 50 0 50 40 l -6 40 h -88 Z" fill="#FDF3E3" stroke-width="8"></path>
+        <g fill="#F2C066" stroke="none">
+          <circle cx="856" cy="460" r="6"></circle><circle cx="892" cy="452" r="6"></circle><circle cx="912" cy="482" r="6"></circle><circle cx="870" cy="492" r="6"></circle><circle cx="842" cy="490" r="5"></circle>
+        </g>
+
+        <path d="M 846 448 q -18 4 -22 22 M 914 448 q 18 4 22 22" fill="none" stroke-width="7"></path>
+        <!-- hands gripping the rail -->
+        <circle cx="826" cy="474" r="12" fill="#E4C29F" stroke-width="6"></circle>
+        <circle cx="934" cy="474" r="12" fill="#E4C29F" stroke-width="6"></circle>
+        <!-- head -->
+        <circle cx="880" cy="368" r="66" fill="#E4C29F" stroke-width="9"></circle>
+        <!-- curly hair tuft -->
+        <path d="M 876 304 q -4 -16 8 -22 q 12 -6 18 6 q -10 -2 -14 6 q 8 2 8 10" fill="#5A4436" stroke-width="5"></path>
+        <!-- ears -->
+        <circle cx="815" cy="372" r="11" fill="#E4C29F" stroke-width="6"></circle>
+        <circle cx="945" cy="372" r="11" fill="#E4C29F" stroke-width="6"></circle>
+        <!-- face states -->
+        <sc-if value="{{ babyHappy }}" hint-placeholder-val="{{ true }}">
+          <path d="M 844 366 q 10 -12 20 0 M 896 366 q 10 -12 20 0" stroke-width="5.5"></path>
+          <path d="M 860 392 q 20 4 40 0 q -4 22 -20 22 q -16 0 -20 -22" fill="#8A3B2A" stroke-width="5"></path>
+          <path d="M 870 406 q 10 6 20 0 q -3 7 -10 7 q -7 0 -10 -7" fill="#F2A9A0" stroke="none"></path>
+        </sc-if>
+        <sc-if value="{{ babyConfused }}" hint-placeholder-val="{{ false }}">
+          <circle cx="854" cy="364" r="5" fill="#6F4B35" stroke="none"></circle>
+          <circle cx="906" cy="364" r="5" fill="#6F4B35" stroke="none"></circle>
+          <path d="M 844 346 q 8 -6 16 -2 M 896 344 q 8 -2 16 4" stroke-width="4.5"></path>
+          <ellipse cx="880" cy="402" rx="10" ry="12" fill="#8A3B2A" stroke-width="5"></ellipse>
+          <text x="952" y="330" font-family="'Baloo 2'" font-weight="800" font-size="34" fill="#6F4B35" stroke="none">?</text>
+        </sc-if>
+        <sc-if value="{{ babyListening }}" hint-placeholder-val="{{ false }}">
+          <circle cx="854" cy="364" r="5.5" fill="#6F4B35" stroke="none"></circle>
+          <circle cx="906" cy="364" r="5.5" fill="#6F4B35" stroke="none"></circle>
+          <path d="M 870 400 q 10 6 20 0" stroke-width="5"></path>
+        </sc-if>
+        <!-- blush always -->
+        <circle cx="832" cy="386" r="8" fill="#F2A9A0" stroke="none"></circle>
+        <circle cx="928" cy="386" r="8" fill="#F2A9A0" stroke="none"></circle>
+      </g>
+      <g transform="translate(90 -140) scale(0.8) rotate(6 1150 720)">
+        <ellipse cx="1150" cy="782" rx="46" ry="9" fill="#6F4B35" opacity="0.15" stroke="none"></ellipse>
+        <!-- legs splayed forward (sitting) -->
+        <ellipse cx="1122" cy="768" rx="13" ry="16" fill="#C98A54" stroke-width="6" transform="rotate(-24 1122 768)"></ellipse>
+        <ellipse cx="1178" cy="768" rx="13" ry="16" fill="#C98A54" stroke-width="6" transform="rotate(24 1178 768)"></ellipse>
+        <ellipse cx="1118" cy="774" rx="6" ry="7" fill="#E4C9A8" stroke="none" transform="rotate(-24 1118 774)"></ellipse>
+        <ellipse cx="1182" cy="774" rx="6" ry="7" fill="#E4C9A8" stroke="none" transform="rotate(24 1182 774)"></ellipse>
+        <!-- round body -->
+        <ellipse cx="1150" cy="742" rx="32" ry="30" fill="#C98A54" stroke-width="7"></ellipse>
+        <ellipse cx="1150" cy="748" rx="16" ry="15" fill="#E4C9A8" stroke="none"></ellipse>
+        <!-- arms: stubby paws resting at the sides -->
+        <ellipse cx="1118" cy="738" rx="10" ry="16" fill="#C98A54" stroke-width="6" transform="rotate(18 1118 738)"></ellipse>
+        <ellipse cx="1182" cy="738" rx="10" ry="16" fill="#C98A54" stroke-width="6" transform="rotate(-18 1182 738)"></ellipse>
+        <!-- head, overlapping the body slightly -->
+        <circle cx="1132" cy="672" r="10" fill="#C98A54" stroke-width="5.5"></circle>
+        <circle cx="1168" cy="672" r="10" fill="#C98A54" stroke-width="5.5"></circle>
+        <circle cx="1132" cy="672" r="4" fill="#E4C9A8" stroke="none"></circle>
+        <circle cx="1168" cy="672" r="4" fill="#E4C9A8" stroke="none"></circle>
+        <circle cx="1150" cy="696" r="28" fill="#C98A54" stroke-width="7"></circle>
+        <!-- muzzle -->
+        <ellipse cx="1150" cy="706" rx="11" ry="8" fill="#E4C9A8" stroke="none"></ellipse>
+        <ellipse cx="1150" cy="702" rx="3.5" ry="2.8" fill="#6F4B35" stroke="none"></ellipse>
+        <path d="M 1150 705 v 4 M 1146 710 h 8" stroke-width="2.5"></path>
+        <!-- neutral button eyes + blush -->
+        <circle cx="1140" cy="691" r="2.8" fill="#6F4B35" stroke="none"></circle>
+        <circle cx="1160" cy="691" r="2.8" fill="#6F4B35" stroke="none"></circle>
+        <circle cx="1132" cy="700" r="3.5" fill="#F2A9A0" stroke="none"></circle>
+        <circle cx="1168" cy="700" r="3.5" fill="#F2A9A0" stroke="none"></circle>
+      </g>
+      <g stroke="#6F4B35" stroke-linecap="round" stroke-linejoin="round" fill="none">
+        <!-- front corner posts (with finials) -->
+        <rect x="630" y="486" width="22" height="158" rx="10" fill="#8A5B36" stroke-width="8"></rect>
+        <rect x="1108" y="486" width="22" height="158" rx="10" fill="#8A5B36" stroke-width="8"></rect>
+        <circle cx="641" cy="478" r="12" fill="#8A5B36" stroke-width="6"></circle>
+        <circle cx="1119" cy="478" r="12" fill="#8A5B36" stroke-width="6"></circle>
+        <!-- front top rail -->
+        <rect x="646" y="500" width="468" height="18" rx="9" fill="#C98A54" stroke-width="8"></rect>
+        <path d="M 692 518 v 96 M 748 518 v 96 M 804 518 v 96 M 860 518 v 96 M 916 518 v 96 M 972 518 v 96 M 1028 518 v 96 M 1074 518 v 96" stroke-width="7"></path>
+        <!-- front bottom rail resting on the posts -->
+        <rect x="646" y="610" width="468" height="16" rx="8" fill="#C98A54" stroke-width="8"></rect>
+        <!-- crocheted blanket over the rail (Abuela's) -->
+        <path d="M 1000 494 q 50 -8 96 6 l -4 70 q -46 -12 -92 -6 Z" fill="#E8917A" stroke-width="7"></path>
+        <path d="M 1010 516 q 40 -8 76 4 M 1008 540 q 40 -8 78 4" stroke="#B3402F" stroke-width="4" opacity="0.6"></path>
+        <path d="M 1004 566 l 6 12 M 1024 568 l 6 12 M 1044 572 l 6 12 M 1064 574 l 6 12" stroke-width="4"></path>
+      </g>
+      <!-- Mom appears on miss/grace, beside the crib -->
+      <sc-if value="{{ showMom }}" hint-placeholder-val="{{ false }}">
+        <g style="{{ momAnimStyle }}"><g transform="translate(-262 -206) scale(1.18)">
+          <ellipse cx="565" cy="686" rx="90" ry="14" fill="#6F4B35" opacity="0.18" stroke="none"></ellipse>
+          <!-- legs + shoes -->
+          <g style="{{ momLegAStyle }}">
+            <path d="M 542 640 v 34" stroke="#D7AB87" stroke-width="13"></path>
+            <ellipse cx="540" cy="680" rx="14" ry="8" fill="#E0674A" stroke-width="5"></ellipse>
+          </g>
+          <g style="{{ momLegBStyle }}">
+            <path d="M 588 640 v 34" stroke="#D7AB87" stroke-width="13"></path>
+            <ellipse cx="590" cy="680" rx="14" ry="8" fill="#E0674A" stroke-width="5"></ellipse>
+          </g>
+          <!-- yellow dress -->
+          <path d="M 505 645 q -6 -120 60 -120 q 66 0 60 120 Z" fill="#F6E3B8" stroke-width="8"></path>
+          <path d="M 512 632 q 9 8 18 0 q 9 8 18 0 q 9 8 17 0 q 9 8 18 0 q 9 8 18 0 q 9 8 17 0" fill="none" stroke-width="4" opacity="0.5"></path>
+          <!-- orange cardigan over it -->
+          <path d="M 508 610 q -4 -80 34 -84 l 6 100 Z M 622 610 q 4 -80 -34 -84 l -6 100 Z" fill="#E0674A" stroke-width="7"></path>
+          <circle cx="565" cy="480" r="52" fill="#D7AB87" stroke-width="8"></circle>
+          <!-- wavy voluminous hair with side-swept half bangs -->
+          <path d="M 518 466 q -6 -44 47 -44 q 53 0 47 44 q -10 -22 -47 -22 q -37 0 -47 22" fill="#5A4436" stroke-width="7"></path>
+          <path d="M 516 456 q 0 -32 40 -32 q -26 18 -20 50 q -8 8 -16 2 q -6 -8 -4 -20" fill="#5A4436" stroke-width="6"></path>
+          <path d="M 514 470 q -4 22 6 36 q 8 -4 6 -16" fill="#5A4436" stroke-width="5.5"></path>
+          <path d="M 614 456 q 0 -32 -40 -32 q 26 18 20 50 q 8 8 16 2 q 6 -8 4 -20" fill="#5A4436" stroke-width="6"></path>
+          <path d="M 616 470 q 4 22 -6 36 q -8 -4 -6 -16" fill="#5A4436" stroke-width="5.5"></path>
+          <path d="M 513 468 q -16 24 -8 46 q -12 8 -4 24 q 10 14 24 4 q 6 -18 -2 -30 q 6 -24 -10 -44 M 617 468 q 16 24 8 46 q 12 8 4 24 q -10 14 -24 4 q -6 -18 2 -30 q -6 -24 10 -44" fill="#5A4436" stroke-width="6.5"></path>
+          <!-- open eyes + gentle closed-lip smile -->
+          <circle cx="547" cy="480" r="4.5" fill="#6F4B35" stroke="none"></circle>
+          <circle cx="583" cy="480" r="4.5" fill="#6F4B35" stroke="none"></circle>
+          <path d="M 540 470 q 7 -5 14 -1 M 576 469 q 7 -4 14 1" stroke-width="3.5"></path>
+          <path d="M 553 502 q 12 9 24 0" fill="none" stroke-width="4.5"></path>
+          <circle cx="528" cy="492" r="7" fill="#F2A9A0" stroke="none"></circle>
+          <circle cx="602" cy="492" r="7" fill="#F2A9A0" stroke="none"></circle>
+          <path d="M 512 560 q -18 24 -8 44 M 618 560 q 18 24 8 44" fill="none" stroke="#E0674A" stroke-width="9"></path>
+          <circle cx="524" cy="612" r="11" fill="#D7AB87" stroke-width="6"></circle>
+          <circle cx="606" cy="612" r="11" fill="#D7AB87" stroke-width="6"></circle>
+        </g></g>
+      </sc-if>
+      <!-- zzz on goodnight -->
+      <sc-if value="{{ showZzz }}" hint-placeholder-val="{{ false }}">
+        <g font-family="'Baloo 2'" font-weight="800" fill="#FDF3E3" stroke="none">
+          <text x="950" y="300" font-size="40" style="animation:zzz 2.4s ease-out infinite;">z</text>
+          <text x="980" y="270" font-size="30" style="animation:zzz 2.4s .8s ease-out infinite;">z</text>
+          <text x="1004" y="246" font-size="22" style="animation:zzz 2.4s 1.6s ease-out infinite;">z</text>
+        </g>
+      </sc-if>
+      <!-- rug -->
+      <ellipse cx="640" cy="730" rx="420" ry="56" fill="#E0674A" stroke-width="8"></ellipse>
+      <ellipse cx="640" cy="730" rx="300" ry="38" fill="none" stroke="#FDF3E3" stroke-width="5" opacity="0.8"></ellipse>
+      <ellipse cx="640" cy="730" rx="170" ry="21" fill="none" stroke-width="4" opacity="0.4"></ellipse>
+      <!-- floor props: teddy + blocks half under crib -->
+
+      <rect x="380" y="700" width="34" height="34" rx="7" fill="#E8917A" stroke-width="6" transform="rotate(-10 397 717)"></rect>
+      <text x="390" y="726" font-family="'Baloo 2'" font-weight="800" font-size="22" fill="#6F4B35" stroke="none" transform="rotate(-10 397 717)">A</text>
+      <rect x="424" y="706" width="34" height="34" rx="7" fill="#F2C066" stroke-width="6" transform="rotate(6 441 723)"></rect>
+      <text x="434" y="732" font-family="'Baloo 2'" font-weight="800" font-size="22" fill="#6F4B35" stroke="none" transform="rotate(6 441 723)">B</text>
+    </g>
+  </svg>
+
+  <!-- lights-dim wash on goodnight -->
+  <sc-if value="{{ showDim }}" hint-placeholder-val="{{ false }}">
+    <div style="position:absolute; inset:0; background:#2E2A4A; animation:lightsDim 2s ease both; pointer-events:none;"></div>
+  </sc-if>
+
+  <!-- ===== SOFÍA'S HANDS + BOOK, bottom center (the instrument) ===== -->
+  <div style="position:absolute; left:0; right:0; bottom:-6px; display:flex; justify-content:center; pointer-events:none;">
+    <svg viewBox="0 0 760 330" width="880" height="330" preserveAspectRatio="none" style="overflow:visible;">
+      <g stroke="#6F4B35" stroke-linecap="round" stroke-linejoin="round" fill="none">
+        <!-- open book -->
+        <path d="M 380 96 q -120 -34 -260 -8 q -18 4 -18 24 l 0 156 q 0 20 20 16 q 140 -24 258 8 Z" fill="#FFFAF0" stroke-width="9"></path>
+        <path d="M 380 96 q 120 -34 260 -8 q 18 4 18 24 l 0 156 q 0 20 -20 16 q -140 -24 -258 8 Z" fill="#FFFAF0" stroke-width="9"></path>
+        <!-- wide, light spine gutter -->
+        <path d="M 380 96 q -14 96 0 196 q 14 -100 0 -196" fill="#F3E8D4" stroke="#EFE0C8" stroke-width="4"></path>
+        <!-- faint text lines across the pages -->
+        <path d="M 140 142 q 108 -16 216 2 M 140 176 q 108 -16 216 2 M 140 210 q 108 -16 216 2 M 140 244 q 80 -12 160 0" stroke="#EFE0C8" stroke-width="4"></path>
+        <path d="M 404 144 q 108 -18 216 0 M 404 178 q 108 -18 216 0 M 404 212 q 108 -18 216 0 M 404 246 q 80 -13 160 -2" stroke="#EFE0C8" stroke-width="4"></path>
+        <!-- stacked page edges -->
+        <path d="M 108 190 q -8 4 -6 14 M 116 178 q -10 6 -8 20 M 652 190 q 8 4 6 14 M 644 178 q 10 6 8 20" stroke="#E4C9A8" stroke-width="4"></path>
+        <!-- corner curls -->
+        <path d="M 118 264 q 14 8 28 6 M 642 264 q -14 8 -28 6" stroke="#E4C9A8" stroke-width="4"></path>
+        <!-- left hand: dark skin-warm fill, red cuff -->
+        <path d="M 96 330 q -6 -66 30 -96 q 26 -20 54 -8 l 26 12 q 16 8 8 24 q -8 14 -24 8 l -22 -10 q 26 26 18 62 l -4 8 Z" fill="#D7AB87" stroke-width="9"></path>
+        <path d="M 150 238 q 14 -4 22 6 M 140 252 q 14 -4 24 6" stroke-width="5" opacity="0.6"></path>
+        <path d="M 60 330 q -2 -28 22 -40 l 40 0 q 20 12 16 40 Z" fill="#B3402F" stroke-width="9"></path>
+        <!-- right hand mirrored -->
+        <path d="M 664 330 q 6 -66 -30 -96 q -26 -20 -54 -8 l -26 12 q -16 8 -8 24 q 8 14 24 8 l 22 -10 q -26 26 -18 62 l 4 8 Z" fill="#D7AB87" stroke-width="9"></path>
+        <path d="M 610 238 q -14 -4 -22 6 M 620 252 q -14 -4 -24 6" stroke-width="5" opacity="0.6"></path>
+        <path d="M 700 330 q 2 -28 -22 -40 l -40 0 q -20 12 -16 40 Z" fill="#B3402F" stroke-width="9"></path>
+      </g>
+    </svg>
+  </div>
+
+  <!-- reading target: the page sentence (largest text on screen) -->
+  <sc-if value="{{ showSentence }}" hint-placeholder-val="{{ true }}">
+    <div style="position:absolute; left:0; right:0; bottom:150px; display:flex; justify-content:center; pointer-events:none;">
+      <div key="{{ pageKey }}" style="width:660px; text-align:center; font-weight:800; font-size:50px; line-height:1.25; color:#6F4B35; animation:pageIn .5s ease-out;"><span style="-webkit-text-stroke:1.5px #3A2417; paint-order:stroke;">{{ sentence }}</span></div>
+    </div>
+  </sc-if>
+
+  <!-- mic button ON the book spine -->
+  <sc-if value="{{ showMic }}" hint-placeholder-val="{{ true }}">
+    <div style="position:absolute; left:50%; bottom:24px; transform:translateX(-50%);">
+      <button onClick="{{ micTap }}" style="{{ micStyle }}">
+        <sc-if value="{{ micListening }}" hint-placeholder-val="{{ false }}">
+          <span style="display:flex; align-items:center; gap:5px; height:34px;">
+            <span style="display:block; width:8px; border-radius:4px; background:#FFFAF0; animation:waveA .6s ease-in-out infinite;"></span>
+            <span style="display:block; width:8px; border-radius:4px; background:#FFFAF0; animation:waveB .55s ease-in-out infinite;"></span>
+            <span style="display:block; width:8px; border-radius:4px; background:#FFFAF0; animation:waveA .7s .15s ease-in-out infinite;"></span>
+            <span style="display:block; width:8px; border-radius:4px; background:#FFFAF0; animation:waveB .6s .1s ease-in-out infinite;"></span>
+          </span>
+        </sc-if>
+        <sc-if value="{{ micIdle }}" hint-placeholder-val="{{ true }}">
+          <svg viewBox="0 0 20 20" width="52" height="52"><rect x="7" y="2" width="6" height="10" rx="3" fill="#FFFAF0"></rect><path d="M 4 9 q 0 7 6 7 q 6 0 6 -7 M 10 16 v 3 M 7 19 h 6" fill="none" stroke="#FFFAF0" stroke-width="2" stroke-linecap="round"></path></svg>
+        </sc-if>
+      </button>
+    </div>
+  </sc-if>
+
+  <!-- Buenas noches: diegetic exit = closing the book cover -->
+  <sc-if value="{{ showGoodnight }}" hint-placeholder-val="{{ true }}">
+    <button onClick="{{ goodnight }}" style="position:absolute; right:20px; bottom:44px; font-family:'Baloo 2'; font-weight:800; font-size:24px; color:#6F4B35; background:#F6E3B8; border:6px solid #6F4B35; border-radius:18px; padding:12px 22px; cursor:pointer; display:flex; align-items:center; gap:10px; box-shadow:0 6px 0 #6F4B35, 0 12px 20px rgba(46,42,74,.35);" style-hover="{ background:'#F2C066' }">
+      <svg viewBox="0 0 24 24" width="30" height="30"><path d="M 4 4 q 8 -3 16 0 v 16 q -8 -3 -16 0 Z M 4 4 v 16" fill="#E8917A" stroke="#6F4B35" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"></path></svg>
+      Buenas noches
+    </button>
+  </sc-if>
+
+  <!-- character speech, in-scene -->
+  <sc-if value="{{ showBabyEcho }}" hint-placeholder-val="{{ false }}">
+    <div style="position:absolute; left:640px; top:196px; background:#FFFAF0; border:6px solid #6F4B35; border-radius:24px 24px 24px 8px; padding:12px 22px; animation:bubblePop .3s ease-out; font-weight:800; font-size:30px; color:#6F4B35;">{{ echoText }} 🍼</div>
+  </sc-if>
+  <sc-if value="{{ showMomBubble }}" hint-placeholder-val="{{ false }}">
+    <div style="position:absolute; left:470px; top:190px; max-width:400px; background:#FFFAF0; border:6px solid #6F4B35; border-radius:24px 24px 24px 8px; padding:12px 20px; animation:bubblePop .3s ease-out; font-weight:700; font-size:26px; color:#6F4B35;">{{ momText }}</div>
+  </sc-if>
+  <sc-if value="{{ showGoodnightText }}" hint-placeholder-val="{{ false }}">
+    <div style="position:absolute; left:0; right:0; top:280px; display:flex; justify-content:center;">
+      <div style="font-weight:800; font-size:52px; color:#FDF3E3;">Buenas noches, hermanito 🌙</div>
+    </div>
+  </sc-if>
+</div>
+
+<!-- state rail + notes -->
+<div style="width:1280px; display:flex; flex-direction:column; gap:12px;">
+  <div style="display:flex; flex-wrap:wrap; gap:8px; align-items:center;">
+    <span style="font-weight:800; font-size:16px; color:#6F4B35; margin-right:4px;">State:</span>
+    <sc-for list="{{ stateButtons }}" as="st" hint-placeholder-count="7">
+      <button onClick="{{ st.pick }}" style="{{ st.style }}">{{ st.label }}</button>
+    </sc-for>
+    <a href="Living Room.dc.html" style="margin-left:auto; font-weight:700; font-size:15px;">← Living room</a>
+  </div>
+  <div style="font-size:15px; line-height:1.5; color:#6F4B35; background:#FDF3E3; border:3px solid #E4C9A8; border-radius:14px; padding:12px 16px;">
+    <strong>Camera:</strong> enters from the living room (house transition), faces the crib; exits nowhere — Buenas noches ends the session (lights dim). ·
+    <strong>Layers:</strong> wall/window · crib+baby · mobile+floor props · hands+book. ·
+    <strong>§4.3:</strong> wait (living scene, Nina chews the rail) → arrival (Mom asks Sofía to read to her hermanito) → reading → pass (echo + giggle, page slides in) → miss (confused babble → Mom models) → grace (Léelo conmigo, auto-pass) → Buenas noches. Misses are baby confusion, never errors (R4.3.1); no retry counter. ·
+    <strong>Idle ladder (§3.9):</strong> 5s → mic pulses harder · 10s → baby points at the book · 20s → baby-voice reads the page. Replay: the ↺ button on the page edge (otra vez).
+  </div>
+</div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props="{&quot;$preview&quot;:{&quot;width&quot;:1320,&quot;height&quot;:1040}}">
+class Component extends DCLogic {
+  state = { st: 'wait', page: 0 };
+  pages = ['The moon is big.', 'The baby sees stars.', 'The bed is soft.'];
+  renderVals() {
+    const st = this.state.st;
+    const has = (...xs) => xs.includes(st);
+    const order = ['wait','arrival','reading','listening','pass','miss','grace','goodnight'];
+    const labels = { wait:'1 wait (living scene)', arrival:'2 arrival (Mom asks)', reading:'3 reading', listening:'4 listening', pass:'5 pass (echo + giggle)', miss:'6 miss (Mom models)', grace:'7 grace (léelo conmigo)', goodnight:'8 buenas noches' };
+    const sentence = this.pages[this.state.page % this.pages.length];
+    return {
+      sentence, pageKey: st + this.state.page,
+      showSentence: !has('wait','arrival','goodnight'),
+      showMic: !has('wait','arrival','goodnight'),
+      micListening: has('listening'),
+      micIdle: !has('listening'),
+      micTap: () => this.setState({ st: 'listening' }),
+      micStyle: {
+        width: '110px', height: '110px', borderRadius: '999px', cursor: 'pointer',
+        background: '#E0674A', border: '7px solid #6F4B35',
+        display: 'grid', placeItems: 'center',
+        animation: has('reading') ? 'micPulse 1.6s ease-in-out infinite' : 'none',
+        pointerEvents: 'auto',
+      },
+      babyStyle: has('pass') ? { animation: 'giggleWiggle .7s ease-in-out infinite', transformOrigin: '880px 470px' }
+        : has('wait') ? { animation: 'babyChew 2.6s ease-in-out infinite', transformOrigin: '880px 470px' }
+        : {},
+      babyHappy: has('wait','arrival','reading','pass','goodnight'),
+      babyConfused: has('miss','grace'),
+      babyListening: has('listening'),
+      showMom: has('arrival','miss','grace','reading'),
+      momLegAStyle: has('arrival','reading','miss') ? { animation: 'legSwingA .5s ease-in-out 2', transformOrigin: '542px 640px' } : {},
+      momLegBStyle: has('arrival','reading','miss') ? { animation: 'legSwingB .5s ease-in-out 2', transformOrigin: '588px 640px' } : {},
+      momAnimStyle: has('reading')
+        ? { animation: 'momLeave 1s ease-in both' }
+        : has('arrival','miss') ? { animation: 'momEnter .9s ease-out both' }
+        : { animation: 'bubblePop .35s ease-out' },
+      showMomBubble: has('arrival','miss','grace'),
+      momText: has('arrival') ? '“Mija, can you please read a bedtime story to your little brother?”'
+        : has('grace') ? '“Léelo conmigo: The… moon… is… big.”' : '“Jaja, casi. Se dice: The moon is big.”',
+      showBabyEcho: has('pass'),
+      echoText: '“' + sentence + '”',
+      showGoodnight: !has('listening','goodnight'),
+      goodnight: () => this.setState({ st: 'goodnight' }),
+      showZzz: has('goodnight'),
+      showDim: has('goodnight'),
+      showGoodnightText: has('goodnight'),
+      stateButtons: order.map(k => ({
+        label: labels[k],
+        pick: () => this.setState({ st: k, page: k === 'pass' ? this.state.page + 1 : this.state.page }),
+        style: {
+          fontFamily: "'Baloo 2'", fontWeight: 700, fontSize: '15px', cursor: 'pointer',
+          padding: '7px 14px', borderRadius: '999px', border: '3px solid #6F4B35',
+          background: st === k ? '#E0674A' : '#FFFAF0',
+          color: st === k ? '#FFFAF0' : '#6F4B35',
+        },
+      })),
+    };
+  }
+}
+</script>
+</body>
+</html>
