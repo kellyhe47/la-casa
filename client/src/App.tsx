@@ -9,6 +9,7 @@ import { TransitionScreen } from "./screens/TransitionScreen";
 import { OffRampScreen } from "./screens/OffRampScreen";
 import { DebugOverlay } from "./components/DebugOverlay";
 import { prefetchSessionStart } from "./pipeline/sessionPrefetch";
+import { startIntroSound } from "./audio/introSound";
 import type { Screen } from "./state/types";
 
 // Check ?debug=1 URL param
@@ -59,6 +60,9 @@ export default function App() {
     }
     const { graph: g, sessionSeed: s } = appStore.getState();
     if (g && s) prefetchSessionStart(g, s);
+    // Background music from app open (falls back to first interaction if
+    // the browser blocks autoplay); fades out when Abuela first speaks
+    startIntroSound();
   }, []);
 
   const handleAdvance = useCallback(() => {
@@ -121,6 +125,7 @@ export default function App() {
             onAdvance={handleAdvance}
             independence={independence}
             sessionMissedWords={sessionMissedWords}
+            sessionPassedWords={sessionPassedWords}
           />
         );
 

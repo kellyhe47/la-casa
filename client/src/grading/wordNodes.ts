@@ -53,6 +53,17 @@ export const WORD_NODES: Record<string, string[]> = {
   snack: ["g_scl", "g_cvc"],
   swim: ["g_scl", "g_cvc"],
 
+  // decodable function words (short-vowel + CVC blending)
+  a: ["g_a"],
+  in: ["g_i", "g_cvc"],
+  at: ["g_a", "g_cvc"],
+  is: ["g_i", "g_cvc"],
+  it: ["g_i", "g_cvc"],
+  and: ["g_a", "g_cvc"],
+  got: ["g_eou", "g_cvc"],
+  not: ["g_eou", "g_cvc"],
+  on: ["g_eou", "g_cvc"],
+
   // sight words
   said: ["s_said"],
   was: ["s_was"],

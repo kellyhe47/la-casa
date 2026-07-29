@@ -13,9 +13,26 @@ export function TitleScreen({ onAdvance, onSessionStart }: TitleScreenProps) {
 
   const handleJugar = useCallback(async () => {
     onSessionStart?.();
-    setState("requesting");
+    // If the browser has already granted mic access, skip the permission +
+    // mic-check overlays entirely — they'd just flash for a moment.
+    let alreadyGranted = false;
     try {
-      await navigator.mediaDevices.getUserMedia({ audio: true });
+      const status = await navigator.permissions?.query?.({ name: "microphone" as PermissionName });
+      alreadyGranted = status?.state === "granted";
+    } catch {
+      // Permissions API unsupported (e.g. older Safari) — keep the overlays
+    }
+    if (!alreadyGranted) setState("requesting");
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+      // Release the mic immediately — holding this stream open can make the
+      // living room's first SpeechRecognition capture flaky
+      stream.getTracks().forEach((t) => t.stop());
+      if (alreadyGranted) {
+        setState("transition");
+        setTimeout(onAdvance, 1900);
+        return;
+      }
       setState("mic-check");
       // Half-second mic check — any audio passes
       setTimeout(() => {
@@ -108,12 +125,6 @@ export function TitleScreen({ onAdvance, onSessionStart }: TitleScreenProps) {
               La Casa needs a microphone to play.
               Please allow access in your browser settings and refresh.
             </p>
-          </div>
-        )}
-
-        {state === "transition" && (
-          <div style={{ color: "#FFF6D8", fontSize: 28, opacity: 0.8 }}>
-            ¡Vamos!
           </div>
         )}
       </div>

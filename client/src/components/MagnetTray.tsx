@@ -3,6 +3,9 @@ import React, { useState, useCallback, useRef } from "react";
 const MAGNET_COLORS = ["#E8917A", "#F2C066", "#9DBBA4", "#B39ECF", "#E0674A"];
 const DISTRACTOR_POOL = ["e", "a", "i", "o", "t", "n", "x", "q", "z", "j", "v", "w", "c", "r", "b", "h", "s"];
 
+/** Pointer must move this far (px) before a press counts as a drag, not a tap. */
+const DRAG_THRESHOLD = 6;
+
 /** Build tray letters from the word's multiset (each occurrence) plus ~4 distractors. */
 function getLetters(word: string): string[] {
   const lower = word.toLowerCase();
@@ -25,6 +28,12 @@ interface SlotState {
   letter: string | null;
 }
 
+interface DragState {
+  trayIdx: number;
+  dx: number;
+  dy: number;
+}
+
 interface MagnetTrayProps {
   targetWord: string;
   onWordComplete: (word: string) => void;
@@ -39,25 +48,24 @@ export function MagnetTray({ targetWord, onWordComplete }: MagnetTrayProps) {
   const [placedFromTray, setPlacedFromTray] = useState<Set<number>>(new Set());
   const [wobbling, setWobbling] = useState<number | null>(null);
   const [selectedTrayIdx, setSelectedTrayIdx] = useState<number | null>(null);
+  const [drag, setDrag] = useState<DragState | null>(null);
+  const dragStartRef = useRef<{ trayIdx: number; x: number; y: number; dragging: boolean } | null>(null);
+  // A drag's trailing click event must not re-select the magnet
+  const suppressClickRef = useRef(false);
   const completedRef = useRef(false);
 
   const getPlacedWord = (s: SlotState[]) => s.map((sl) => sl.letter || "").join("");
 
-  const handleMagnetTap = useCallback((trayIdx: number) => {
-    if (placedFromTray.has(trayIdx)) return;
-    setSelectedTrayIdx(trayIdx);
-  }, [placedFromTray]);
-
-  const handleSlotTap = useCallback((slotIdx: number) => {
-    if (selectedTrayIdx === null) return;
-    const letter = availableLetters[selectedTrayIdx];
+  /** Shared placement logic for tap-tap and drag-drop. */
+  const placeLetter = useCallback((trayIdx: number, slotIdx: number) => {
+    const letter = availableLetters[trayIdx];
     const correctLetter = lower[slotIdx];
 
-    const newSlots = [...slots];
-    if (letter === correctLetter) {
+    if (letter === correctLetter && !slots[slotIdx].letter) {
+      const newSlots = [...slots];
       newSlots[slotIdx] = { letter };
       setSlots(newSlots);
-      setPlacedFromTray((prev) => new Set([...prev, selectedTrayIdx]));
+      setPlacedFromTray((prev) => new Set([...prev, trayIdx]));
       setSelectedTrayIdx(null);
 
       const word = getPlacedWord(newSlots);
@@ -67,12 +75,60 @@ export function MagnetTray({ targetWord, onWordComplete }: MagnetTrayProps) {
         setTimeout(() => onWordComplete(word), 200);
       }
     } else {
-      // Wrong letter: wobble animation, return to tray (R4.4.2)
-      setWobbling(selectedTrayIdx);
+      // Wrong letter (or occupied slot): wobble animation, return to tray (R4.4.2)
+      setWobbling(trayIdx);
       setTimeout(() => setWobbling(null), 900);
       setSelectedTrayIdx(null);
     }
-  }, [selectedTrayIdx, availableLetters, lower, slots, onWordComplete]);
+  }, [availableLetters, lower, slots, onWordComplete]);
+
+  const handleMagnetTap = useCallback((trayIdx: number) => {
+    if (placedFromTray.has(trayIdx)) return;
+    setSelectedTrayIdx(trayIdx);
+  }, [placedFromTray]);
+
+  const handleSlotTap = useCallback((slotIdx: number) => {
+    if (selectedTrayIdx === null) return;
+    placeLetter(selectedTrayIdx, slotIdx);
+  }, [selectedTrayIdx, placeLetter]);
+
+  const handlePointerDown = useCallback((e: React.PointerEvent, trayIdx: number) => {
+    if (placedFromTray.has(trayIdx)) return;
+    dragStartRef.current = { trayIdx, x: e.clientX, y: e.clientY, dragging: false };
+    try {
+      (e.currentTarget as HTMLElement).setPointerCapture(e.pointerId);
+    } catch { /* jsdom / older browsers */ }
+  }, [placedFromTray]);
+
+  const handlePointerMove = useCallback((e: React.PointerEvent) => {
+    const start = dragStartRef.current;
+    if (!start) return;
+    const dx = e.clientX - start.x;
+    const dy = e.clientY - start.y;
+    if (!start.dragging && Math.hypot(dx, dy) < DRAG_THRESHOLD) return;
+    start.dragging = true;
+    setDrag({ trayIdx: start.trayIdx, dx, dy });
+  }, []);
+
+  const handlePointerUp = useCallback((e: React.PointerEvent) => {
+    const start = dragStartRef.current;
+    dragStartRef.current = null;
+    if (!start) return;
+
+    if (!start.dragging) return; // plain tap — the trailing click event selects
+    suppressClickRef.current = true;
+    setDrag(null);
+
+    // Drop: hit-test the slot under the pointer (magnet has pointer capture,
+    // so e.target is the magnet itself — use elementFromPoint instead)
+    const el = typeof document.elementFromPoint === "function"
+      ? document.elementFromPoint(e.clientX, e.clientY)
+      : null;
+    const slotEl = el?.closest?.('[data-testid="letter-slot"]') as HTMLElement | null;
+    if (slotEl?.dataset.slotIndex !== undefined) {
+      placeLetter(start.trayIdx, Number(slotEl.dataset.slotIndex));
+    }
+  }, [placeLetter]);
 
   const nextEmptySlot = slots.findIndex((s) => !s.letter);
 
@@ -92,6 +148,7 @@ export function MagnetTray({ targetWord, onWordComplete }: MagnetTrayProps) {
           <div
             key={i}
             data-testid="letter-slot"
+            data-slot-index={i}
             onClick={() => handleSlotTap(i)}
             style={{
               width: 58,
@@ -103,7 +160,7 @@ export function MagnetTray({ targetWord, onWordComplete }: MagnetTrayProps) {
               justifyContent: "center",
               background: slot.letter ? "#FBE7A8" : "#FFFAF0",
               cursor: selectedTrayIdx !== null && !slot.letter ? "pointer" : "default",
-              boxShadow: i === nextEmptySlot && selectedTrayIdx !== null ? "0 0 0 3px #F2C066" : "none",
+              boxShadow: i === nextEmptySlot && (selectedTrayIdx !== null || drag !== null) ? "0 0 0 3px #F2C066" : "none",
               transition: "box-shadow 0.2s",
             }}
           >
@@ -130,13 +187,21 @@ export function MagnetTray({ targetWord, onWordComplete }: MagnetTrayProps) {
           const isPlaced = placedFromTray.has(i);
           const isWobbling = wobbling === i;
           const isSelected = selectedTrayIdx === i;
+          const isDragging = drag?.trayIdx === i;
           const color = MAGNET_COLORS[i % MAGNET_COLORS.length];
 
           return (
             <div
               key={i}
               data-testid="magnet"
-              onClick={() => !isPlaced && handleMagnetTap(i)}
+              onClick={() => {
+                if (suppressClickRef.current) { suppressClickRef.current = false; return; }
+                if (!isPlaced) handleMagnetTap(i);
+              }}
+              onPointerDown={(e) => handlePointerDown(e, i)}
+              onPointerMove={handlePointerMove}
+              onPointerUp={handlePointerUp}
+              onPointerCancel={() => { dragStartRef.current = null; setDrag(null); }}
               style={{
                 width: 62,
                 height: 62,
@@ -145,19 +210,31 @@ export function MagnetTray({ targetWord, onWordComplete }: MagnetTrayProps) {
                 padding: 4,
                 borderRadius: 8,
                 background: isPlaced ? "rgba(201,138,84,0.3)" : color,
-                border: `5px solid ${isSelected ? "#F2C066" : "#6F4B35"}`,
+                border: `5px solid ${isSelected || isDragging ? "#F2C066" : "#6F4B35"}`,
                 boxShadow: isPlaced ? "none" : `0 4px 0 #6F4B35`,
                 display: "flex",
                 alignItems: "center",
                 justifyContent: "center",
-                cursor: isPlaced ? "default" : "pointer",
+                cursor: isPlaced ? "default" : isDragging ? "grabbing" : "grab",
                 opacity: isPlaced ? 0.3 : 1,
-                transform: isSelected ? "scale(1.1)" : isWobbling ? "rotate(-15deg)" : "none",
+                touchAction: "none",
+                position: "relative",
+                zIndex: isDragging ? 10 : "auto",
+                // While dragging, let elementFromPoint see through to the slot
+                // (pointer capture still delivers move/up events to this element)
+                pointerEvents: isDragging ? "none" : "auto",
+                transform: isDragging
+                  ? `translate(${drag.dx}px, ${drag.dy}px) scale(1.1)`
+                  : isSelected
+                    ? "scale(1.1)"
+                    : isWobbling
+                      ? "rotate(-15deg)"
+                      : "none",
                 animation: isWobbling ? "wobble-back 0.9s ease-in-out" : "none",
-                transition: isWobbling ? "none" : "transform 0.15s, opacity 0.2s",
+                transition: isWobbling || isDragging ? "none" : "transform 0.15s, opacity 0.2s",
               }}
             >
-              <span style={{ fontFamily: "'Baloo 2', sans-serif", fontWeight: 800, fontSize: 28, color: "#FFFAF0", textShadow: "0 1px 3px rgba(0,0,0,0.4)" }}>
+              <span style={{ fontFamily: "'Baloo 2', sans-serif", fontWeight: 800, fontSize: 28, color: "#FFFAF0", textShadow: "0 1px 3px rgba(0,0,0,0.4)", pointerEvents: "none" }}>
                 {isPlaced ? "" : letter}
               </span>
             </div>

@@ -3,6 +3,8 @@ export interface TextCacheKey {
   frontierTarget: string;
   independenceBand: number;
   seed: string;
+  /** Concrete LLM prompt forwarded to /generate (the server reads req.body.prompt) */
+  prompt?: string;
 }
 
 export interface AudioCacheKey {

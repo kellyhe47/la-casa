@@ -6,6 +6,8 @@ import { grade } from "../grading/grade";
 import { getNodesForWord } from "../grading/wordNodes";
 import type { SkillGraph } from "../graph/SkillGraph";
 import { contentPipeline } from "../pipeline/ContentPipeline";
+import { stopIntroSound } from "../audio/introSound";
+import { appStore } from "../state/appStore";
 import {
   ABUELA_VOICE_ID,
   ABUELA_LANG,
@@ -31,17 +33,33 @@ interface LivingRoomScreenProps {
   independence: number;
 }
 
-/** Prefer ElevenLabs; fall back to browser speech when proxy stubs (no key). */
-async function speakAbuela(text: string): Promise<void> {
+/** Cancellation handle for Abuela's speech — flipped when the screen unmounts
+ *  so an API response that lands late never speaks over the next scene. */
+interface SpeakHandle {
+  cancelled: boolean;
+  audio: HTMLAudioElement | null;
+}
+
+/** Prefer ElevenLabs; fall back to browser speech when proxy stubs (no key).
+ *  onFetchSettled fires once the TTS API call resolves or fails — before
+ *  playback — so the typing indicator covers loading, not speaking. */
+async function speakAbuela(text: string, handle: SpeakHandle, onFetchSettled?: () => void): Promise<void> {
   try {
-    const buffer = await contentPipeline.fetchTTS({
-      text,
-      voiceId: ABUELA_VOICE_ID,
-      lang: ABUELA_LANG,
-    });
+    let buffer: ArrayBuffer;
+    try {
+      buffer = await contentPipeline.fetchTTS({
+        text,
+        voiceId: ABUELA_VOICE_ID,
+        lang: ABUELA_LANG,
+      });
+    } finally {
+      onFetchSettled?.();
+    }
+    if (handle.cancelled) return; // scene already left — drop the audio
     const blob = new Blob([buffer], { type: "audio/mpeg" });
     const url = URL.createObjectURL(blob);
     const audio = new Audio(url);
+    handle.audio = audio;
     await audio.play();
     await new Promise<void>((res) => {
       audio.onended = () => res();
@@ -51,6 +69,7 @@ async function speakAbuela(text: string): Promise<void> {
   } catch {
     // Proxy stub / missing key — browser TTS so the note is still audible in demo
   }
+  if (handle.cancelled) return;
   if (typeof window !== "undefined" && window.speechSynthesis) {
     await new Promise<void>((resolve) => {
       window.speechSynthesis.cancel();
@@ -72,8 +91,28 @@ export function LivingRoomScreen({ graph, seed, onAdvance, independence }: Livin
   const [itemCompleted, setItemCompleted] = useState(false);
   const [isExitDimmed, setIsExitDimmed] = useState(true);
   const [micActive, setMicActive] = useState(false);
+  // Count of in-flight API calls (image + TTS) — typing dots show while > 0
+  const [apiPending, setApiPending] = useState(0);
+  const beginLoad = useCallback(() => setApiPending((c) => c + 1), []);
+  const endLoad = useCallback(() => setApiPending((c) => Math.max(0, c - 1)), []);
   const recRef = useRef<SpeechRecognition | null>(null);
   const startedRef = useRef(false);
+  // One handle for the screen's lifetime — unmount flips it to cancel any
+  // in-flight speech so nothing talks over the next scene
+  const speakHandleRef = useRef<SpeakHandle>({ cancelled: false, audio: null });
+
+  useEffect(() => {
+    const handle = speakHandleRef.current;
+    // StrictMode remounts after running cleanup — un-cancel so the initial
+    // voice-note flow (guarded by startedRef, so it doesn't restart) survives
+    handle.cancelled = false;
+    return () => {
+      handle.cancelled = true;
+      handle.audio?.pause();
+      if (typeof window !== "undefined") window.speechSynthesis?.cancel();
+      recRef.current?.stop?.();
+    };
+  }, []);
   // Words already served this visit — the loop never repeats a word/photo
   const usedWordsRef = useRef<Set<string>>(new Set([currentWord]));
 
@@ -88,8 +127,20 @@ export function LivingRoomScreen({ graph, seed, onAdvance, independence }: Livin
   }, []);
 
   const playVoiceNote = useCallback(async (text: string) => {
-    await speakAbuela(text);
-  }, []);
+    beginLoad();
+    await speakAbuela(text, speakHandleRef.current, endLoad);
+  }, [beginLoad, endLoad]);
+
+  const fetchImageWithTyping = useCallback(async (word: string): Promise<string | undefined> => {
+    beginLoad();
+    try {
+      return await contentPipeline.fetchImage({ word, seed });
+    } catch {
+      return undefined; // stub — illustration fallback in ChatThread
+    } finally {
+      endLoad();
+    }
+  }, [beginLoad, endLoad, seed]);
 
   const startListening = useCallback(() => {
     const SR = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
@@ -99,7 +150,9 @@ export function LivingRoomScreen({ graph, seed, onAdvance, independence }: Livin
     rec.interimResults = false;
     rec.lang = "en-US";
 
+    let gotResult = false;
     rec.onresult = async (e: SpeechRecognitionEvent) => {
+      gotResult = true;
       const transcript = e.results[0]?.[0]?.transcript || "";
       setMicActive(false);
       setLoopState("thinking");
@@ -109,6 +162,7 @@ export function LivingRoomScreen({ graph, seed, onAdvance, independence }: Livin
       if (result.pass) {
         graph.update(nodeIds, 1);
         graph.recordItemBoundary();
+        appStore.getState().recordWordResult(currentWord, 1);
         setItemCompleted(true);
         setIsExitDimmed(false);
         setMissCount(0);
@@ -120,10 +174,7 @@ export function LivingRoomScreen({ graph, seed, onAdvance, independence }: Livin
         const nextWord = nextFrontierWord();
         setCurrentWord(nextWord);
         // Next photo + voice note
-        let imgUrl: string | undefined;
-        try {
-          imgUrl = await contentPipeline.fetchImage({ word: nextWord, seed });
-        } catch { /* stub */ }
+        const imgUrl = await fetchImageWithTyping(nextWord);
         addMessage({
           id: `img-${Date.now()}`,
           sender: "abuela",
@@ -155,7 +206,14 @@ export function LivingRoomScreen({ graph, seed, onAdvance, independence }: Livin
         setMissCount(newMissCount);
         graph.update([nodeIds[0] || "g_sh"], 0);
 
+        // Show what was heard as Sofía's bubble so the correction has context
+        const heardWord = transcript.trim().toLowerCase();
+        if (heardWord) {
+          addMessage({ id: `sofia-${Date.now()}`, sender: "sofia", type: "text", text: heardWord });
+        }
+
         if (newMissCount >= 2) {
+          appStore.getState().recordWordResult(currentWord, 0);
           const graceText = `Ahh — dice "${currentWord}", mija. ¡Muy bien!`;
           addMessage({ id: Date.now().toString(), sender: "abuela", type: "text", text: graceText });
           await playVoiceNote(graceText);
@@ -166,10 +224,7 @@ export function LivingRoomScreen({ graph, seed, onAdvance, independence }: Livin
           setLoopState("arrival");
           const nextWord = nextFrontierWord();
           setCurrentWord(nextWord);
-          let imgUrl: string | undefined;
-          try {
-            imgUrl = await contentPipeline.fetchImage({ word: nextWord, seed });
-          } catch { /* stub */ }
+          const imgUrl = await fetchImageWithTyping(nextWord);
           addMessage({
             id: `img-${Date.now()}`,
             sender: "abuela",
@@ -185,7 +240,9 @@ export function LivingRoomScreen({ graph, seed, onAdvance, independence }: Livin
           });
           await playVoiceNote(VOICE_NOTE_TEXT);
         } else {
-          const missText = "¿Cómo, mija? No te escuché bien...";
+          const missText = heardWord
+            ? `Mmm, escuché "${heardWord}"... pero aquí no dice eso. Mira otra vez, mija — ¿qué dice?`
+            : "¿Cómo, mija? No te escuché bien...";
           addMessage({ id: Date.now().toString(), sender: "abuela", type: "text", text: missText });
           await playVoiceNote(missText);
           setLoopState("arrival");
@@ -197,21 +254,27 @@ export function LivingRoomScreen({ graph, seed, onAdvance, independence }: Livin
       setMicActive(false);
       setLoopState("arrival");
     };
+    // Recognition can end with neither result nor error (cold-start / silence)
+    // — without this the screen sticks in "listening" with a dead mic, which
+    // is why the first tap after landing often "never records"
+    rec.onend = () => {
+      if (!gotResult) {
+        setMicActive(false);
+        setLoopState("arrival");
+      }
+    };
     rec.start();
     recRef.current = rec;
     setMicActive(true);
     setLoopState("listening");
-  }, [currentWord, missCount, graph, addMessage, playVoiceNote, independence, seed, nextFrontierWord]);
+  }, [currentWord, missCount, graph, addMessage, playVoiceNote, fetchImageWithTyping, independence, seed, nextFrontierWord]);
 
   // First exchange on mount: photo + voice note + autoplay
   useEffect(() => {
     if (startedRef.current) return;
     startedRef.current = true;
     (async () => {
-      let imgUrl: string | undefined;
-      try {
-        imgUrl = await contentPipeline.fetchImage({ word: currentWord, seed });
-      } catch { /* living-scene: illustration fallback in ChatThread */ }
+      const imgUrl = await fetchImageWithTyping(currentWord);
       addMessage({
         id: "init-image",
         sender: "abuela",
@@ -231,6 +294,7 @@ export function LivingRoomScreen({ graph, seed, onAdvance, independence }: Livin
         type: "text",
         text: VOICE_NOTE_TEXT,
       });
+      stopIntroSound(); // fade the intro music as Abuela starts speaking
       await playVoiceNote(VOICE_NOTE_TEXT);
     })();
   }, []);
@@ -273,9 +337,32 @@ export function LivingRoomScreen({ graph, seed, onAdvance, independence }: Livin
         fontFamily: "'Baloo 2', sans-serif",
       }}
     >
-      {/* Background scene — includes white phone + Sofía's hands */}
+      {/* Background scene — includes white phone + Sofía's hands.
+          The mic hit-target lives inside this aspect-ratio box so it stays
+          locked to the SVG's 1280×800 coordinate space (ring at 640,680 r78). */}
       <div style={{ position: "absolute", inset: 0 }}>
-        <LivingRoomScene />
+        <div style={{ position: "relative", width: "100%", aspectRatio: "1280 / 800" }}>
+          <LivingRoomScene />
+          <button
+            data-testid="mic-button"
+            onClick={handleMicClick}
+            aria-label="Micrófono"
+            style={{
+              position: "absolute",
+              left: "50%",
+              top: "85%",
+              transform: "translate(-50%, -50%)",
+              width: "12.2%",
+              aspectRatio: "1 / 1",
+              borderRadius: "50%",
+              border: "none",
+              background: micActive ? "rgba(176,64,47,0.35)" : "transparent",
+              cursor: "pointer",
+              zIndex: 6,
+              animation: !micActive && loopState === "arrival" ? "mic-pulse 1.4s ease-in-out infinite" : "none",
+            }}
+          />
+        </div>
       </div>
 
       {/* Chat overlay — design chrome */}
@@ -314,6 +401,7 @@ export function LivingRoomScreen({ graph, seed, onAdvance, independence }: Livin
 
         <ChatThread
           messages={messages}
+          isTyping={apiPending > 0}
           onPlayVoiceNote={(msg) => playVoiceNote(msg.text || VOICE_NOTE_TEXT)}
         />
 
@@ -336,27 +424,6 @@ export function LivingRoomScreen({ graph, seed, onAdvance, independence }: Livin
           </svg>
         </div>
       </div>
-
-      {/* Transparent mic hit-target over the SVG phone screen — no dark layover */}
-      <button
-        data-testid="mic-button"
-        onClick={handleMicClick}
-        aria-label="Micrófono"
-        style={{
-          position: "absolute",
-          left: "50%",
-          bottom: "9%",
-          transform: "translateX(-50%)",
-          width: 160,
-          height: 160,
-          borderRadius: "50%",
-          border: "none",
-          background: micActive ? "rgba(176,64,47,0.35)" : "transparent",
-          cursor: "pointer",
-          zIndex: 6,
-          animation: !micActive && loopState === "arrival" ? "mic-pulse 1.4s ease-in-out infinite" : "none",
-        }}
-      />
 
       {itemCompleted && (
         <button

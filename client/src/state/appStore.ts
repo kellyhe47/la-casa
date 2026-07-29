@@ -20,6 +20,8 @@ export interface AppState {
   advanceBeat: () => void;
   setMicState: (s: MicState) => void;
   recordGrade: (nodeIds: string[], result: 0 | 1, word: string) => void;
+  /** Track pass/miss word lists only — for screens that update the graph themselves */
+  recordWordResult: (word: string, result: 0 | 1) => void;
   setDebugOpen: (open: boolean) => void;
 }
 
@@ -61,6 +63,14 @@ export function createAppStore() {
       if (!graph) return;
       graph.update(nodeIds, result);
       graph.recordItemBoundary();
+      if (result === 0) {
+        set((state) => ({ sessionMissedWords: [...state.sessionMissedWords, word] }));
+      } else {
+        set((state) => ({ sessionPassedWords: [...state.sessionPassedWords, word] }));
+      }
+    },
+
+    recordWordResult(word: string, result: 0 | 1) {
       if (result === 0) {
         set((state) => ({ sessionMissedWords: [...state.sessionMissedWords, word] }));
       } else {

@@ -14,9 +14,10 @@ export interface ChatMessage {
 interface ChatThreadProps {
   messages: ChatMessage[];
   onPlayVoiceNote?: (msg: ChatMessage) => void;
+  isTyping?: boolean;
 }
 
-export function ChatThread({ messages, onPlayVoiceNote }: ChatThreadProps) {
+export function ChatThread({ messages, onPlayVoiceNote, isTyping }: ChatThreadProps) {
   return (
     <div
       data-testid="chat-thread"
@@ -146,6 +147,42 @@ export function ChatThread({ messages, onPlayVoiceNote }: ChatThreadProps) {
           </div>
         );
       })}
+
+      {/* Abuela typing / content loading indicator */}
+      {isTyping && (
+        <div
+          data-testid="typing-indicator"
+          style={{
+            alignSelf: "flex-start",
+            display: "flex",
+            alignItems: "center",
+            gap: 7,
+            background: "#FFFAF0",
+            border: "5px solid #6F4B35",
+            borderRadius: "18px 18px 18px 6px",
+            padding: "12px 16px",
+          }}
+        >
+          {[0, 1, 2].map((i) => (
+            <div
+              key={i}
+              style={{
+                width: 10,
+                height: 10,
+                borderRadius: "50%",
+                background: "#B3402F",
+                animation: `typing-blink 1.2s ease-in-out ${i * 0.2}s infinite`,
+              }}
+            />
+          ))}
+          <style>{`
+            @keyframes typing-blink {
+              0%, 60%, 100% { opacity: 0.25; transform: translateY(0); }
+              30% { opacity: 1; transform: translateY(-3px); }
+            }
+          `}</style>
+        </div>
+      )}
     </div>
   );
 }

@@ -5,28 +5,21 @@ import { gradeSpelling } from "../grading/grade";
 import { getNodesForWord } from "../grading/wordNodes";
 import type { SkillGraph } from "../graph/SkillGraph";
 import { contentPipeline } from "../pipeline/ContentPipeline";
+import { appStore } from "../state/appStore";
+import { getFrontierWord } from "../pipeline/sessionPrefetch";
 import { voices } from "../../../content/voices.json";
 
 const DAD_VOICE_ID = (voices as any)["voice.papa"].elevenLabsVoiceID;
 
-function getTargetWord(graph: SkillGraph, sessionMissedWords: string[]): string {
-  // AC15: (1) missed-then-graced words → (2) frontier target → (3) mastered pool
-  if (sessionMissedWords.length > 0) {
-    const lastMissed = sessionMissedWords[sessionMissedWords.length - 1];
-    if (lastMissed) return lastMissed;
+function getTargetWord(graph: SkillGraph, sessionMissedWords: string[], exclude: string[]): string {
+  // AC15: (1) missed-then-graced words → (2) frontier target → (3) mastered pool.
+  // Words already passed this session (read with Abuela) or already spelled at
+  // the fridge are excluded so the child is never re-tested on the same word.
+  const missed = sessionMissedWords.filter((w) => !exclude.includes(w));
+  if (missed.length > 0) {
+    return missed[missed.length - 1];
   }
-  const frontier = graph.frontier();
-  if (frontier.length > 0) {
-    const nodeWordMap: Record<string, string> = {
-      g_sh: "fish", g_ee: "beans", g_th: "this", g_vb: "van",
-      g_z: "zip", g_scl: "stop", g_ae: "cake", g_ch: "cheese",
-      v_groc2: "beans", v_groc1: "milk",
-    };
-    const word = nodeWordMap[frontier[0].id];
-    if (word) return word;
-  }
-  // Mastered pool fallback
-  return "milk";
+  return getFrontierWord(graph, exclude);
 }
 
 interface FridgeScreenProps {
@@ -35,6 +28,7 @@ interface FridgeScreenProps {
   onAdvance: () => void;
   independence: number;
   sessionMissedWords: string[];
+  sessionPassedWords?: string[];
 }
 
 interface StickyNote {
@@ -45,17 +39,38 @@ interface StickyNote {
 
 const NOTE_COLORS = ["#E8917A", "#F2C066", "#9DBBA4", "#B39ECF"];
 
-export function FridgeScreen({ graph, seed, onAdvance, independence, sessionMissedWords }: FridgeScreenProps) {
-  const [currentWord, setCurrentWord] = useState(() => getTargetWord(graph, sessionMissedWords));
+export function FridgeScreen({ graph, seed, onAdvance, independence, sessionMissedWords, sessionPassedWords = [] }: FridgeScreenProps) {
+  // Words already served this visit — never ask for the same word twice
+  const usedWordsRef = useRef<Set<string>>(new Set());
+  const pickWord = useCallback(() => {
+    const exclude = [...usedWordsRef.current, ...sessionPassedWords];
+    const word = getTargetWord(graph, sessionMissedWords, exclude);
+    usedWordsRef.current.add(word);
+    return word;
+  }, [graph, sessionMissedWords, sessionPassedWords]);
+  const [currentWord, setCurrentWord] = useState(() => pickWord());
   const [stickyNotes, setStickyNotes] = useState<StickyNote[]>([]);
   const [itemCompleted, setItemCompleted] = useState(false);
   const [loopState, setLoopState] = useState<"wait" | "prompt" | "dragging" | "stick" | "goodnight">("prompt");
   const [trayKey, setTrayKey] = useState(0); // force remount MagnetTray on new word
   const audioRef = useRef<HTMLAudioElement | null>(null);
+  // Flipped on unmount — a TTS response landing late must not speak over the
+  // bedroom scene (only Mamá and the baby talk there)
+  const cancelledRef = useRef(false);
+
+  useEffect(() => {
+    // StrictMode remounts after running cleanup — un-cancel on (re)mount
+    cancelledRef.current = false;
+    return () => {
+      cancelledRef.current = true;
+      audioRef.current?.pause();
+    };
+  }, []);
 
   const playAudio = useCallback(async (text: string, voiceId: string) => {
     try {
       const buffer = await contentPipeline.fetchTTS({ text, voiceId, lang: "en-US" });
+      if (cancelledRef.current) return; // scene already left — drop the audio
       const blob = new Blob([buffer], { type: "audio/mpeg" });
       const url = URL.createObjectURL(blob);
       const audio = new Audio(url);
@@ -92,6 +107,7 @@ export function FridgeScreen({ graph, seed, onAdvance, independence, sessionMiss
     const nodeIds = getNodesForWord(currentWord);
     graph.update(nodeIds, 1);
     graph.recordItemBoundary();
+    appStore.getState().recordWordResult(currentWord, 1);
 
     setStickyNotes((prev) => [
       ...prev,
@@ -110,13 +126,13 @@ export function FridgeScreen({ graph, seed, onAdvance, independence, sessionMiss
 
     // Move to next word after short delay
     setTimeout(() => {
-      const nextWord = getTargetWord(graph, []);
+      const nextWord = pickWord();
       setCurrentWord(nextWord);
       setTrayKey((k) => k + 1);
       setLoopState("prompt");
       contentPipeline.prefetchNext({ beat: "fridge", frontierTarget: graph.frontier()[0]?.id || "g_sh", independenceBand: independence, seed });
     }, 2000);
-  }, [currentWord, graph, playAudio, independence, seed]);
+  }, [currentWord, graph, playAudio, independence, seed, pickWord]);
 
   const handleExit = useCallback(async () => {
     if (!itemCompleted) return;
@@ -143,8 +159,9 @@ export function FridgeScreen({ graph, seed, onAdvance, independence, sessionMiss
         <FridgeScene />
       </div>
 
-      {/* Sticky notes on fridge door */}
-      <div style={{ position: "absolute", top: 80, left: "32%", width: 200 }}>
+      {/* Sticky notes on the lower fridge door — one row of 3; a 4th note
+          starts a new layer from the left, stacking over the first row */}
+      <div style={{ position: "absolute", top: 270, left: "36%", width: 380 }}>
         {stickyNotes.map((note, i) => (
           <div
             key={i}
@@ -152,21 +169,24 @@ export function FridgeScreen({ graph, seed, onAdvance, independence, sessionMiss
               background: note.color,
               border: "3px solid #6F4B35",
               borderRadius: 8,
-              padding: "8px 16px",
-              transform: `rotate(${note.rotation}deg) translateY(${i * -8}px)`,
+              padding: "8px 12px",
+              transform: `rotate(${note.rotation}deg)`,
               position: "absolute",
-              top: i * 12,
-              left: i * 4,
+              top: Math.floor(i / 3) * 14,
+              left: (i % 3) * 122 + Math.floor(i / 3) * 10,
+              width: 118,
+              whiteSpace: "nowrap",
+              overflow: "hidden",
               boxShadow: "0 4px 12px rgba(0,0,0,0.2)",
               zIndex: i + 1,
               animation: "stick-pop 0.5s cubic-bezier(0.34, 1.56, 0.64, 1)",
             }}
           >
-            <span style={{ fontFamily: "'Baloo 2', sans-serif", fontWeight: 700, fontSize: 20, color: "#6F4B35" }}>
+            <span style={{ fontFamily: "'Baloo 2', sans-serif", fontWeight: 700, fontSize: 16, color: "#6F4B35" }}>
               para Mamá:
             </span>
             <br />
-            <span style={{ fontFamily: "'Baloo 2', sans-serif", fontWeight: 800, fontSize: 26, color: "#6F4B35" }}>
+            <span style={{ fontFamily: "'Baloo 2', sans-serif", fontWeight: 800, fontSize: 22, color: "#6F4B35" }}>
               {note.word}
             </span>
           </div>

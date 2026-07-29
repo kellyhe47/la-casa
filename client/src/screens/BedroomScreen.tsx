@@ -5,6 +5,7 @@ import { grade } from "../grading/grade";
 import { getNodesForWord } from "../grading/wordNodes";
 import type { SkillGraph } from "../graph/SkillGraph";
 import { contentPipeline } from "../pipeline/ContentPipeline";
+import { generateBedtimeSentence } from "../pipeline/sentenceGen";
 import { voices } from "../../../content/voices.json";
 
 const BABY_VOICE_ID = (voices as any)["voice.baby"].elevenLabsVoiceID;
@@ -45,8 +46,34 @@ interface BedroomScreenProps {
 }
 
 export function BedroomScreen({ graph, seed, onAdvance, independence, sessionPassedWords }: BedroomScreenProps) {
-  const [sentences] = useState(() => getSentences(sessionPassedWords));
+  const [sentences, setSentences] = useState(() => getSentences(sessionPassedWords));
   const [pageIndex, setPageIndex] = useState(0);
+  // Endless pages (§4.3): next sentence is LLM-generated + validator-gated,
+  // prefetched while the current page plays; templates are the fallback.
+  const sentencesRef = useRef<string[]>([]);
+  const nextGenRef = useRef<Promise<string | null> | null>(null);
+  useEffect(() => { sentencesRef.current = sentences; }, [sentences]);
+
+  const prefetchNextSentence = useCallback(() => {
+    nextGenRef.current = generateBedtimeSentence(graph, seed, independence, sentencesRef.current)
+      .catch(() => null);
+  }, [graph, seed, independence]);
+
+  useEffect(() => { prefetchNextSentence(); }, []);
+
+  /** Advance to the next page: generated sentence when available, otherwise
+   *  cycle the template pages so the book never dead-ends. */
+  const advancePage = useCallback(async () => {
+    const gen = nextGenRef.current ? await nextGenRef.current : null;
+    nextGenRef.current = null;
+    if (gen) {
+      setSentences((prev) => [...prev, gen]);
+      setPageIndex((i) => i + 1);
+    } else {
+      setPageIndex((i) => (i + 1) % sentencesRef.current.length);
+    }
+    prefetchNextSentence();
+  }, [prefetchNextSentence]);
   const [loopState, setLoopState] = useState<LoopState>("arrival");
   const [missCount, setMissCount] = useState(0);
   const [pageCompleted, setPageCompleted] = useState(false);
@@ -63,7 +90,8 @@ export function BedroomScreen({ graph, seed, onAdvance, independence, sessionPas
       const blob = new Blob([buffer], { type: "audio/mpeg" });
       const audio = new Audio(URL.createObjectURL(blob));
       await audio.play();
-      return new Promise<void>((res) => { audio.onended = () => res(); });
+      // Resolve on error too — a decode failure must not deadlock the loop
+      return new Promise<void>((res) => { audio.onended = () => res(); audio.onerror = () => res(); });
     } catch {
       // Living-scene wait (R8.4.3)
     }
@@ -77,7 +105,9 @@ export function BedroomScreen({ graph, seed, onAdvance, independence, sessionPas
     rec.interimResults = false;
     rec.lang = "en-US";
 
+    let gotResult = false;
     rec.onresult = async (e: SpeechRecognitionEvent) => {
+      gotResult = true;
       const transcript = e.results[0]?.[0]?.transcript || "";
       setLoopState("pass"); // optimistic, grading is < 100ms
 
@@ -93,16 +123,16 @@ export function BedroomScreen({ graph, seed, onAdvance, independence, sessionPas
         setMissCount(0);
         setMomVisible(false);
         setBabyMood("happy");
-        setStatusText(BABY_GIGGLES[Math.floor(Math.random() * BABY_GIGGLES.length)]);
-        // Baby echoes the TARGET sentence (prefetched, not kid's voice — R4.3.0)
+        const giggle = BABY_GIGGLES[Math.floor(Math.random() * BABY_GIGGLES.length)];
+        setStatusText(giggle);
+        // Giggle + echo of the TARGET sentence — both in the baby's voice (R4.3.0)
+        await playAudio(giggle, BABY_VOICE_ID);
         await playAudio(currentSentence, BABY_VOICE_ID);
         setLoopState("reading");
-        // Advance to next page
-        if (pageIndex < sentences.length - 1) {
-          setPageIndex((i) => i + 1);
-          setBabyMood("listening");
-          setStatusText("");
-        }
+        // Next page — generated (validator-gated) or template fallback
+        await advancePage();
+        setBabyMood("listening");
+        setStatusText("");
         // Prefetch next
         contentPipeline.prefetchNext({ beat: "bedroom", frontierTarget: graph.frontier()[0]?.id || "g_ee", independenceBand: independence, seed });
       } else {
@@ -124,25 +154,28 @@ export function BedroomScreen({ graph, seed, onAdvance, independence, sessionPas
           setPageCompleted(true);
           setBabyMood("happy");
           setStatusText(BABY_GIGGLES[0]);
+          await playAudio(BABY_GIGGLES[0], BABY_VOICE_ID);
           await playAudio(currentSentence, BABY_VOICE_ID);
           setMomVisible(false);
           setMissCount(0);
-          if (pageIndex < sentences.length - 1) {
-            setPageIndex((i) => i + 1);
-            setBabyMood("listening");
-            setStatusText("");
-          }
+          await advancePage();
+          setBabyMood("listening");
+          setStatusText("");
           setLoopState("reading");
         } else {
           setBabyMood("confused");
+          // Baby's confused babble — in the baby's voice
+          await playAudio(BABY_CONFUSED[Math.floor(Math.random() * BABY_CONFUSED.length)], BABY_VOICE_ID);
           setMomVisible(true);
-          setStatusText(BABY_CONFUSED[Math.floor(Math.random() * BABY_CONFUSED.length)]);
-          // Mom models
-          const modelText = currentSentence.split(" ").join("... ");
+          // Mom models — same "Léelo conmigo" formula as the grace path so
+          // her invitation reads consistently on every miss
+          const modelText = `Léelo conmigo: ${currentSentence}`;
+          setStatusText(modelText);
           await playAudio(modelText, MOM_VOICE_ID);
           setLoopState("reading");
           setMomVisible(false);
           setBabyMood("listening");
+          setStatusText("");
         }
       }
     };
@@ -151,11 +184,19 @@ export function BedroomScreen({ graph, seed, onAdvance, independence, sessionPas
       setLoopState("reading");
       setBabyMood("listening");
     };
+    // Recognition can end with neither result nor error (e.g. silence) —
+    // without this the loop sticks in "listening" and the mic goes dead
+    rec.onend = () => {
+      if (!gotResult) {
+        setLoopState("reading");
+        setBabyMood("listening");
+      }
+    };
     rec.start();
     recRef.current = rec;
     setLoopState("listening");
     setBabyMood("listening");
-  }, [currentSentence, missCount, graph, playAudio, pageIndex, sentences, independence, seed]);
+  }, [currentSentence, missCount, graph, playAudio, pageIndex, sentences, independence, seed, advancePage]);
 
   const handleMicClick = useCallback(() => {
     if (loopState === "reading" || loopState === "arrival") {
@@ -210,27 +251,46 @@ export function BedroomScreen({ graph, seed, onAdvance, independence, sessionPas
 
       {/* Mom character — enters from left on miss/arrival */}
       {momVisible && (
-        <div style={{ position: "absolute", bottom: 200, left: -20, animation: "mom-enter 0.5s ease-out forwards" }}>
-          <svg width="80" height="160" viewBox="0 0 80 160">
-            {/* Mom simplified */}
-            <circle cx="40" cy="30" r="22" fill="#D7AB87" />
-            {/* Wavy hair */}
-            <path d="M20 20 Q25 8 40 10 Q55 8 60 20" fill="#5A4436" />
-            {/* Blush */}
-            <circle cx="28" cy="34" r="4" fill="#F2A9A0" opacity={0.7} />
-            <circle cx="52" cy="34" r="4" fill="#F2A9A0" opacity={0.7} />
-            {/* Eyes */}
-            <circle cx="33" cy="28" r="3" fill="#5A4436" />
-            <circle cx="47" cy="28" r="3" fill="#5A4436" />
-            {/* Smile */}
-            <path d="M34 38 Q40 43 46 38" fill="none" stroke="#6F4B35" strokeWidth="2" strokeLinecap="round" />
-            {/* Orange cardigan */}
-            <path d="M18 52 L10 120 L70 120 L62 52 Q40 60 18 52" fill="#E0674A" />
-            {/* Yellow dress peek */}
-            <path d="M15 105 L10 130 L70 130 L65 105" fill="#F6E3B8" />
-            {/* Legs */}
-            <rect x="25" y="130" width="12" height="25" fill="#D7AB87" rx="4" />
-            <rect x="43" y="130" width="12" height="25" fill="#D7AB87" rx="4" />
+        <div style={{ position: "absolute", bottom: "22%", left: "23%", width: "17.5%", animation: "mom-enter 0.5s ease-out forwards" }}>
+          {/* Mom — art from design/handoff/Bedroom.dc.html (mom group, scene coords);
+              size/position match the mockup's translate(-262 -206) scale(1.18) placement beside the crib */}
+          <svg width="100%" viewBox="470 415 190 280" style={{ display: "block" }}>
+            <g stroke="#6F4B35" strokeLinecap="round" strokeLinejoin="round" fill="none">
+              <ellipse cx="565" cy="686" rx="90" ry="14" fill="#6F4B35" opacity="0.18" stroke="none" />
+              {/* legs + shoes */}
+              <g style={{ animation: "mom-leg-a 0.5s ease-in-out 2", transformOrigin: "542px 640px" }}>
+                <path d="M 542 640 v 34" stroke="#D7AB87" strokeWidth="13" />
+                <ellipse cx="540" cy="680" rx="14" ry="8" fill="#E0674A" strokeWidth="5" />
+              </g>
+              <g style={{ animation: "mom-leg-b 0.5s ease-in-out 2", transformOrigin: "588px 640px" }}>
+                <path d="M 588 640 v 34" stroke="#D7AB87" strokeWidth="13" />
+                <ellipse cx="590" cy="680" rx="14" ry="8" fill="#E0674A" strokeWidth="5" />
+              </g>
+              {/* yellow dress */}
+              <path d="M 505 645 q -6 -120 60 -120 q 66 0 60 120 Z" fill="#F6E3B8" strokeWidth="8" />
+              <path d="M 512 632 q 9 8 18 0 q 9 8 18 0 q 9 8 17 0 q 9 8 18 0 q 9 8 18 0 q 9 8 17 0" fill="none" strokeWidth="4" opacity="0.5" />
+              {/* orange cardigan over it */}
+              <path d="M 508 610 q -4 -80 34 -84 l 6 100 Z M 622 610 q 4 -80 -34 -84 l -6 100 Z" fill="#E0674A" strokeWidth="7" />
+              <circle cx="565" cy="480" r="52" fill="#D7AB87" strokeWidth="8" />
+              {/* wavy voluminous hair with side-swept half bangs */}
+              <path d="M 518 466 q -6 -44 47 -44 q 53 0 47 44 q -10 -22 -47 -22 q -37 0 -47 22" fill="#5A4436" strokeWidth="7" />
+              <path d="M 516 456 q 0 -32 40 -32 q -26 18 -20 50 q -8 8 -16 2 q -6 -8 -4 -20" fill="#5A4436" strokeWidth="6" />
+              <path d="M 514 470 q -4 22 6 36 q 8 -4 6 -16" fill="#5A4436" strokeWidth="5.5" />
+              <path d="M 614 456 q 0 -32 -40 -32 q 26 18 20 50 q 8 8 16 2 q 6 -8 4 -20" fill="#5A4436" strokeWidth="6" />
+              <path d="M 616 470 q 4 22 -6 36 q -8 -4 -6 -16" fill="#5A4436" strokeWidth="5.5" />
+              <path d="M 513 468 q -16 24 -8 46 q -12 8 -4 24 q 10 14 24 4 q 6 -18 -2 -30 q 6 -24 -10 -44 M 617 468 q 16 24 8 46 q 12 8 4 24 q -10 14 -24 4 q -6 -18 2 -30 q -6 -24 10 -44" fill="#5A4436" strokeWidth="6.5" />
+              {/* open eyes + gentle closed-lip smile */}
+              <circle cx="547" cy="480" r="4.5" fill="#6F4B35" stroke="none" />
+              <circle cx="583" cy="480" r="4.5" fill="#6F4B35" stroke="none" />
+              <path d="M 540 470 q 7 -5 14 -1 M 576 469 q 7 -4 14 1" strokeWidth="3.5" />
+              <path d="M 553 502 q 12 9 24 0" fill="none" strokeWidth="4.5" />
+              <circle cx="528" cy="492" r="7" fill="#F2A9A0" stroke="none" />
+              <circle cx="602" cy="492" r="7" fill="#F2A9A0" stroke="none" />
+              {/* arms */}
+              <path d="M 512 560 q -18 24 -8 44 M 618 560 q 18 24 8 44" fill="none" stroke="#E0674A" strokeWidth="9" />
+              <circle cx="524" cy="612" r="11" fill="#D7AB87" strokeWidth="6" />
+              <circle cx="606" cy="612" r="11" fill="#D7AB87" strokeWidth="6" />
+            </g>
           </svg>
         </div>
       )}
@@ -297,6 +357,14 @@ export function BedroomScreen({ graph, seed, onAdvance, independence, sessionPas
         @keyframes mom-enter {
           from { transform: translateX(-100px); opacity: 0; }
           to { transform: translateX(0); opacity: 1; }
+        }
+        @keyframes mom-leg-a {
+          0%, 100% { transform: rotate(14deg); }
+          50% { transform: rotate(-14deg); }
+        }
+        @keyframes mom-leg-b {
+          0%, 100% { transform: rotate(-14deg); }
+          50% { transform: rotate(14deg); }
         }
         @keyframes lights-dim {
           from { opacity: 0; }
