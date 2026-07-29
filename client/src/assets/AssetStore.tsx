@@ -1,0 +1,5 @@
+export { TitleScene } from './scenes/TitleScene'
+export { LivingRoomScene } from './scenes/LivingRoomScene'
+export { FridgeScene } from './scenes/FridgeScene'
+export { BedroomScene } from './scenes/BedroomScene'
+export { TransitionScene } from './scenes/TransitionScene'
