@@ -12,9 +12,9 @@ A web literacy game for Spanish-speaking Grade-2 learners, built around a family
 - `docs/skill-graph.html` — the 25 skill nodes, prereq edges, fresh vs demo-state frontier
 - `docs/archive/` — superseded design exploration (third-person mocks; palette/tone reference only). Screen designs come from a dedicated design session against PRD §3.1
 - `content/demo-state.json` — the mid-progress learner state every session boots from (warm-seeded frontier)
-- `content/reference-pack/` — 6 authored grocery beats + audio manifest + 12 ElevenLabs mp3s. **Reference material, not a runtime path** (there is no content fallback — PRD R8.4.3): documents the beat JSON schema, story-bible tone, and voice pipeline
+- `content/reference-pack/beats.json` — authored example beats (MVP kinds only). **Reference material, never read at runtime** (there is no content fallback — PRD R8.4.3): documents the beat JSON schema and story-bible tone
 - `content/voices.json` — voice casting (free-tier premades; preferred paid es-MX picks stashed under `_userPaidPicks_needsElevenLabsStarterPlan`, need ElevenLabs Starter)
-- `scripts/generate_fallback_audio.sh` — regenerates reference-pack audio via ElevenLabs (reads `.env` ELEVENLABS_API_KEY) if lines or voices change
+- `scripts/generate_voice_samples.sh` — generates voice-casting audition samples via ElevenLabs (reads `.env` ELEVENLABS_API_KEY); also the reference for the build's TTS API integration
 
 ## Platform notes (keep out of the PRD)
 

@@ -1,4 +1,4 @@
-# La Casa — design-session brief
+# La Casa — design-session brief (updated 2026-07-29)
 
 Paste this to the design agent along with: `PRD.md` (§3.1 screen contract + §10 art rules are binding), `CONTEXT.md`, and the best-attempt screenshot with the critique below.
 
@@ -9,16 +9,20 @@ Paste this to the design agent along with: `PRD.md` (§3.1 screen contract + §1
 You are art-directing **La Casa**, a first-person web literacy game for a Spanish-speaking 7-year-old. Produce screen designs as self-contained HTML/SVG mocks, **one screen at a time**, at exactly **1280×800**, starting with the Living room. PRD §3.1 defines every screen's layout, elements, and states; PRD §10 defines the art rules. Both are binding — do not invent UI the spec doesn't have, do not omit states it does (every room includes its living-scene wait state).
 
 **The signature — non-negotiable, this is what past attempts missed:**
-Every shape is drawn in the style of a **cozy coloring book**: a visible warm-brown outline (#6F4B35) around every silhouette (~9–10px) and interior line (~6–7px), round caps, **clean confident curves** — polished, not hand-shaky (no wobble/roughen effects). Flat fills inside the lines. No gradients, no soft shadows except one soft ground ellipse per object. If a frame of the design could pass as generic flat vector illustration with no outlines, it is wrong. Tone references: *Coco* (multigenerational Mexican family warmth), *Cleo & Cuquín*.
+Every shape is drawn in the style of a **cozy coloring book, richly lit**: a visible warm-brown outline (#6F4B35) around every silhouette (~9–10px) and interior line (~6–7px), round caps, **clean confident curves** — polished, not hand-shaky (no wobble/roughen effects). Gradients and soft shadows are welcome — use them for depth, warmth, and light (lamp glow, TV spill, doorway gold, soft object shadows). The ink outline is the non-negotiable signature: richness lives *inside and around* the lines; if a frame could pass as generic outline-less flat illustration, it is wrong. Technical rule: a shadow or glow belongs to the same depth layer as the object casting it (parallax moves them together). Tone references: *Coco* (multigenerational Mexican family warmth), *Cleo & Cuquín*.
 
 **Detail density — the anti-"elementary" rule:**
 Rooms must feel *lived in by this specific family*, not furnished from a starter kit. For each room, include 10–15 specific props that tell the family's story (Living room e.g.: Abuela's crocheted blanket draped uneven on the couch, a Virgen de Guadalupe candle on the shelf, a molcajete used as a plant pot, family photos where faces have the cast's silhouettes, baby toys half under the couch, papel picado from a past birthday still strung in a corner, a telenovela paused on the TV). Props follow the same ink-line rules. Clutter is warm; sparse is cold.
 
-**First person (PRD §2):** the camera is Sofía. She never appears — only her hands and held objects enter from the bottom of frame (phone, list, basket, magnets, book), dark skin-warm fill, red sleeve cuff. Characters face and address the camera. Interactive elements anchor to the world (the mic button lives ON her phone, not floating in space).
+**First person (PRD §2):** the camera is Sofía. She never appears — only her hands and held objects enter from the bottom of frame (phone, list, basket, magnets, book), warm skin fill #D7AB87, red sleeve cuff. Characters face and address the camera. Interactive elements anchor to the world (the mic button lives ON her phone, not floating in space).
+
+**Skin tones (updated 2026-07-29):** the whole cast uses lightened warm tones. Family base **#D7AB87** (Sofía's hands, Mom, Abuela, wall-photo faces); the baby one step lighter, **#E4C29F**. The red sleeve cuff remains Sofía's signature.
+
+**Cast note (updated):** the bedroom baby is a little brother (*hermanito*). Mom's dialogue is LLM-generated and band-dependent — she may speak English; do not hard-code Spanish-only lines or any "contéstale en español" grading requirement.
 
 **Color system (PRD §10):** cream grounds #FFFAF0/#FDF3E3, ink #6F4B35, ONE terracotta #E0674A primary action per screen (ink-outlined). Each room owns a hue *under the same ink line*: living room coral, kitchen butter-yellow, store mint, bedroom lavender. Type: Baloo 2, reading text ≥40px.
 
-**Hard prohibitions:** no text labels on store shelf items (pictures only); no save/progress indicators of any kind (nothing persists); no XP/meters/scores; no red X or error styling anywhere; no gradients; no drop shadows; no third-person Sofía.
+**Hard prohibitions:** no text labels on store shelf items (pictures only); no save/progress indicators of any kind (nothing persists); no XP/meters/scores; no red X or error styling anywhere; no third-person Sofía; no "new story" control on the title screen (removed 2026-07-29).
 
 **Interaction grammar (PRD §3.2, binding):** fixed zones on every screen — bottom-center: Sofía's hands holding the input instrument (mic lives ON the phone, magnets ON the tray); center stage: the world and characters (all feedback comes from characters in-scene, never toasts); top corner: the carried context (travelling list); side overlay: chat, never covering the hands. Reading target = largest text on screen; exits are diegetic objects.
 
