@@ -1,12 +1,12 @@
 import { describe, it, expect, vi } from "vitest";
-import { render, screen, fireEvent, act } from "@testing-library/react";
+import { render, screen, fireEvent } from "@testing-library/react";
 import React from "react";
 import { TransitionScreen } from "./TransitionScreen";
 import { OffRampScreen } from "./OffRampScreen";
 
 describe("TransitionScreen", () => {
-  // AC2: transition is skippable after 1s on any tap
-  it("AC2+AC3: renders and calls onComplete when skipped", () => {
+  // Guard (015): skippable on tap — regression guard, may already pass
+  it("015 guard: AC2+AC3 click calls onComplete when skipped", () => {
     const onComplete = vi.fn();
     render(<TransitionScreen from="living-room" to="fridge" onComplete={onComplete} />);
     // Click to skip
@@ -15,12 +15,32 @@ describe("TransitionScreen", () => {
     expect(onComplete).toHaveBeenCalled();
   });
 
-  // AC7: CSS animation (not canvas/paint)
-  it("AC7: renders as div/svg, not canvas", () => {
+  // Guard (015): no canvas — regression guard, may already pass
+  it("015 guard: AC7 renders without canvas", () => {
     const onComplete = vi.fn();
     render(<TransitionScreen from="living-room" to="fridge" onComplete={onComplete} />);
     const canvases = document.querySelectorAll("canvas");
     expect(canvases).toHaveLength(0);
+  });
+
+  // Ticket 015 — House transition not gradient-only
+  it("015: shows SVG house-travel content inside transition-screen", () => {
+    const onComplete = vi.fn();
+    render(<TransitionScreen from="living-room" to="fridge" onComplete={onComplete} />);
+    const root = screen.getByTestId("transition-screen");
+    const svg = root.querySelector("svg");
+    expect(svg).toBeTruthy();
+  });
+
+  it("015: has a transition-scene layer (not gradient + Tap to skip only)", () => {
+    const onComplete = vi.fn();
+    render(<TransitionScreen from="living-room" to="fridge" onComplete={onComplete} />);
+    const root = screen.getByTestId("transition-screen");
+    // Implementer must add a scene layer — either data-testid or an svg with viewBox
+    const scene =
+      root.querySelector('[data-testid="transition-scene"]') ||
+      root.querySelector("svg[viewBox]");
+    expect(scene).toBeTruthy();
   });
 });
 

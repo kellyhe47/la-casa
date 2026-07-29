@@ -44,4 +44,40 @@ describe("ChatThread", () => {
     const beanText = screen.getAllByText(/beans/i);
     expect(beanText.length).toBeGreaterThan(0);
   });
+
+  // Ticket 013 — Abuela target word when image stubbed / failed
+  describe("013: target word visible without imageUrl", () => {
+    const stubbedImageMessage: ChatMessage[] = [
+      {
+        id: "stub-1",
+        sender: "abuela",
+        type: "image",
+        targetWord: "beans",
+        imageUrl: undefined,
+      },
+    ];
+
+    it("013: shows English target word as DOM text when imageUrl is undefined", () => {
+      render(<ChatThread messages={stubbedImageMessage} />);
+      // Word must not be gated on imageUrl being truthy
+      expect(screen.getByText("beans")).toBeTruthy();
+    });
+
+    it("013: target word fontSize is ≥40px even when image is stubbed", () => {
+      render(<ChatThread messages={stubbedImageMessage} />);
+      const wordEl = screen.getByText("beans");
+      const fontSize =
+        parseFloat(wordEl.style.fontSize) ||
+        parseFloat(getComputedStyle(wordEl).fontSize);
+      expect(fontSize).toBeGreaterThanOrEqual(40);
+    });
+
+    it("013: polaroid may be empty but word is still visible (not gated on imageUrl)", () => {
+      render(<ChatThread messages={stubbedImageMessage} />);
+      // No img is fine when stubbed — word must still be in the document
+      const imgs = document.querySelectorAll('[data-sender="abuela"] img');
+      expect(imgs.length).toBe(0);
+      expect(screen.getByText("beans")).toBeTruthy();
+    });
+  });
 });
