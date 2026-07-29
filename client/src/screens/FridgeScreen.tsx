@@ -1,6 +1,7 @@
 import React, { useState, useCallback, useEffect, useRef } from "react";
 import { FridgeScene } from "../assets/AssetStore";
 import { MagnetTray } from "../components/MagnetTray";
+import { EXIT_BUTTON_ANCHOR } from "../components/exitButtonAnchor";
 import { gradeSpelling } from "../grading/grade";
 import { getNodesForWord } from "../grading/wordNodes";
 import type { SkillGraph } from "../graph/SkillGraph";
@@ -241,9 +242,7 @@ export function FridgeScreen({ graph, seed, onAdvance, independence, sessionMiss
           onClick={handleExit}
           disabled={loopState === "goodnight"}
           style={{
-            position: "absolute",
-            bottom: 160,
-            right: 24,
+            ...EXIT_BUTTON_ANCHOR,
             background: "#F2C066",
             color: "#6F4B35",
             border: "4px solid #6F4B35",

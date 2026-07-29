@@ -2,6 +2,7 @@ import React, { useState, useEffect, useCallback, useRef } from "react";
 import { LivingRoomScene } from "../assets/AssetStore";
 import { ChatThread, type ChatMessage } from "../components/ChatThread";
 import { AbuelaAvatar } from "../components/AbuelaArt";
+import { EXIT_BUTTON_ANCHOR } from "../components/exitButtonAnchor";
 import { grade } from "../grading/grade";
 import { getNodesForWord } from "../grading/wordNodes";
 import type { SkillGraph } from "../graph/SkillGraph";
@@ -15,6 +16,11 @@ import {
   getFirstFrontierWord,
   getFrontierWord,
 } from "../pipeline/sessionPrefetch";
+
+// Entrance choreography: the living room is on screen alone for ~two beats,
+// then the phone chat panel fades in and rises
+const PANEL_ENTER_DELAY_MS = 1800;
+const PANEL_ENTER_DURATION_MS = 600;
 
 type LoopState =
   | "wait"
@@ -269,11 +275,14 @@ export function LivingRoomScreen({ graph, seed, onAdvance, independence }: Livin
     setLoopState("listening");
   }, [currentWord, missCount, graph, addMessage, playVoiceNote, fetchImageWithTyping, independence, seed, nextFrontierWord]);
 
-  // First exchange on mount: photo + voice note + autoplay
+  // First exchange on mount: photo + voice note + autoplay.
+  // Waits out the panel entrance — the room is seen alone for ~two beats,
+  // then the phone panel rises, then Abuela's exchange begins.
   useEffect(() => {
     if (startedRef.current) return;
     startedRef.current = true;
     (async () => {
+      await new Promise((r) => setTimeout(r, PANEL_ENTER_DELAY_MS + PANEL_ENTER_DURATION_MS));
       const imgUrl = await fetchImageWithTyping(currentWord);
       addMessage({
         id: "init-image",
@@ -372,7 +381,8 @@ export function LivingRoomScreen({ graph, seed, onAdvance, independence }: Livin
           top: 48,
           right: 20,
           width: 368,
-          height: "calc(100% - 220px)",
+          height: "calc(100% - 180px)",
+          animation: `panel-enter ${PANEL_ENTER_DURATION_MS}ms ease-out ${PANEL_ENTER_DELAY_MS}ms both`,
           display: "flex",
           flexDirection: "column",
           boxSizing: "border-box",
@@ -431,9 +441,7 @@ export function LivingRoomScreen({ graph, seed, onAdvance, independence }: Livin
           onClick={handleExit}
           disabled={isExitDimmed || loopState === "listening" || loopState === "thinking"}
           style={{
-            position: "absolute",
-            top: 16,
-            left: 16,
+            ...EXIT_BUTTON_ANCHOR,
             background: isExitDimmed ? "rgba(201,138,84,0.3)" : "#C98A54",
             color: isExitDimmed ? "rgba(255,250,240,0.4)" : "#FFFAF0",
             border: "3px solid #6F4B35",
@@ -443,7 +451,6 @@ export function LivingRoomScreen({ graph, seed, onAdvance, independence }: Livin
             fontWeight: 700,
             fontFamily: "'Baloo 2', sans-serif",
             cursor: isExitDimmed ? "default" : "pointer",
-            zIndex: 7,
           }}
         >
           Adiós, Abuela
@@ -451,6 +458,10 @@ export function LivingRoomScreen({ graph, seed, onAdvance, independence }: Livin
       )}
 
       <style>{`
+        @keyframes panel-enter {
+          from { opacity: 0; transform: translateY(48px); }
+          to { opacity: 1; transform: translateY(0); }
+        }
         @keyframes mic-pulse {
           0%, 100% { box-shadow: 0 0 0 0 rgba(224,103,74,0.45); }
           50% { box-shadow: 0 0 0 18px rgba(224,103,74,0); }

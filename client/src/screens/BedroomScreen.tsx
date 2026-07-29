@@ -1,6 +1,7 @@
 import React, { useState, useCallback, useEffect, useRef } from "react";
 import { BedroomScene } from "../assets/AssetStore";
 import { BookInstrument } from "../components/BookInstrument";
+import { EXIT_BUTTON_ANCHOR } from "../components/exitButtonAnchor";
 import { grade } from "../grading/grade";
 import { getNodesForWord } from "../grading/wordNodes";
 import type { SkillGraph } from "../graph/SkillGraph";
@@ -322,9 +323,7 @@ export function BedroomScreen({ graph, seed, onAdvance, independence, sessionPas
           onClick={handleExit}
           disabled={loopState === "listening" || loopState === "goodnight"}
           style={{
-            position: "absolute",
-            bottom: 140,
-            right: 24,
+            ...EXIT_BUTTON_ANCHOR,
             background: "#F6E3B8",
             color: "#6F4B35",
             border: "4px solid #6F4B35",

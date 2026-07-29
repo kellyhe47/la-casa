@@ -54,9 +54,21 @@ export function TitleScreen({ onAdvance, onSessionStart }: TitleScreenProps) {
         fontFamily: "'Baloo 2', sans-serif",
       }}
     >
-      {/* Scene SVG fills the background */}
+      {/* Scene SVG fills the background. On transition we zoom into the front
+          door (at ~51%/63% of the scene's 1280×800 box) and hand off to the
+          entering-the-house transition. */}
       <div style={{ position: "absolute", inset: 0 }}>
-        <TitleScene />
+        <div
+          style={{
+            width: "100%",
+            aspectRatio: "1280 / 800",
+            transformOrigin: "51% 63%",
+            transform: state === "transition" ? "scale(3.4)" : "scale(1)",
+            transition: "transform 1.9s cubic-bezier(0.55, 0, 0.8, 0.4)",
+          }}
+        >
+          <TitleScene />
+        </div>
       </div>
 
       {/* Overlay controls */}

@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useEffect, useRef } from "react";
 import { WordIllustration } from "./AbuelaArt";
 
 export interface ChatMessage {
@@ -18,13 +18,21 @@ interface ChatThreadProps {
 }
 
 export function ChatThread({ messages, onPlayVoiceNote, isTyping }: ChatThreadProps) {
+  const scrollRef = useRef<HTMLDivElement | null>(null);
+
+  // Keep the newest message in view as the thread grows
+  useEffect(() => {
+    const el = scrollRef.current;
+    if (el) el.scrollTop = el.scrollHeight;
+  }, [messages, isTyping]);
+
   return (
     <div
+      ref={scrollRef}
       data-testid="chat-thread"
       style={{
         display: "flex",
         flexDirection: "column",
-        justifyContent: "flex-end",
         gap: 10,
         padding: "12px 4px 8px",
         overflowY: "auto",
@@ -32,6 +40,9 @@ export function ChatThread({ messages, onPlayVoiceNote, isTyping }: ChatThreadPr
         minHeight: 0,
       }}
     >
+      {/* Spacer pins a short thread to the bottom without breaking scrolling
+          (justify-content: flex-end makes overflowed messages unreachable) */}
+      <div style={{ marginTop: "auto" }} />
       {messages.map((msg) => {
         const isAbuela = msg.sender === "abuela";
         return (
