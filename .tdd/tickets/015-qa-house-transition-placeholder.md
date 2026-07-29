@@ -1,7 +1,7 @@
 ---
 id: "015"
 title: "QA: House transition is gradient placeholder, not house glide"
-status: in-progress
+status: green
 depends_on: ["012", "006"]
 touches:
   - client/src/screens/TransitionScreen.tsx

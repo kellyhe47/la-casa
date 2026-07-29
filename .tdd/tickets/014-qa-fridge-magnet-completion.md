@@ -1,7 +1,7 @@
 ---
 id: "014"
 title: "QA: Fridge magnet tap-tap cannot complete a word"
-status: in-progress
+status: green
 depends_on: ["009"]
 touches:
   - client/src/components/MagnetTray.tsx
