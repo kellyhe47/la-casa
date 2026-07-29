@@ -11,6 +11,7 @@ import {
   ABUELA_LANG,
   VOICE_NOTE_TEXT,
   getFirstFrontierWord,
+  getFrontierWord,
 } from "../pipeline/sessionPrefetch";
 
 type LoopState =
@@ -73,6 +74,14 @@ export function LivingRoomScreen({ graph, seed, onAdvance, independence }: Livin
   const [micActive, setMicActive] = useState(false);
   const recRef = useRef<SpeechRecognition | null>(null);
   const startedRef = useRef(false);
+  // Words already served this visit — the loop never repeats a word/photo
+  const usedWordsRef = useRef<Set<string>>(new Set([currentWord]));
+
+  const nextFrontierWord = useCallback(() => {
+    const word = getFrontierWord(graph, [...usedWordsRef.current]);
+    usedWordsRef.current.add(word);
+    return word;
+  }, [graph]);
 
   const addMessage = useCallback((msg: ChatMessage) => {
     setMessages((prev) => [...prev, msg]);
@@ -108,7 +117,7 @@ export function LivingRoomScreen({ graph, seed, onAdvance, independence }: Livin
         addMessage({ id: (Date.now() + 1).toString(), sender: "abuela", type: "text", text: replyText });
         await playVoiceNote(replyText);
         setLoopState("arrival");
-        const nextWord = getFirstFrontierWord(graph);
+        const nextWord = nextFrontierWord();
         setCurrentWord(nextWord);
         // Next photo + voice note
         let imgUrl: string | undefined;
@@ -155,7 +164,7 @@ export function LivingRoomScreen({ graph, seed, onAdvance, independence }: Livin
           setMissCount(0);
           graph.recordItemBoundary();
           setLoopState("arrival");
-          const nextWord = getFirstFrontierWord(graph);
+          const nextWord = nextFrontierWord();
           setCurrentWord(nextWord);
           let imgUrl: string | undefined;
           try {
@@ -192,7 +201,7 @@ export function LivingRoomScreen({ graph, seed, onAdvance, independence }: Livin
     recRef.current = rec;
     setMicActive(true);
     setLoopState("listening");
-  }, [currentWord, missCount, graph, addMessage, playVoiceNote, independence, seed]);
+  }, [currentWord, missCount, graph, addMessage, playVoiceNote, independence, seed, nextFrontierWord]);
 
   // First exchange on mount: photo + voice note + autoplay
   useEffect(() => {

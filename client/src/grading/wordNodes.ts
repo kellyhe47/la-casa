@@ -44,6 +44,9 @@ export const WORD_NODES: Record<string, string[]> = {
   zip: ["g_z", "g_cvc"],
   buzz: ["g_z", "g_cvc"],
 
+  // a_e long a
+  cake: ["g_ae", "g_cvc"],
+
   // s-clusters
   stop: ["g_scl", "g_cvc"],
   spin: ["g_scl", "g_cvc"],

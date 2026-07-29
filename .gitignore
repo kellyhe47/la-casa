@@ -5,3 +5,4 @@ dist/
 .scratch/
 .tdd/worktrees/
 .qa/evidence/
+.qa/probe-report.json
