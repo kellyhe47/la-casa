@@ -1,0 +1,35 @@
+{
+  "miss1": "▶\nnota de voz\n▶\nnota de voz\n¿Cómo, mija? No te escuché bien...\n¿Cómo, mija? No te escuché bien...",
+  "miss2": {
+    "chat": "▶\nnota de voz\n▶\nnota de voz\n¿Cómo, mija? No te escuché bien...\n¿Cómo, mija? No te escuché bien...\nAhh — dice \"fish\", mija. ¡Muy bien!\n¿Cómo, mija? No te escuché bien...\n¿Cómo, mija? No te escuché bien...\n¿Cómo, mija? No te escuché bien...",
+    "exit": true,
+    "exitText": "Adiós, Abuela 👋",
+    "kid": "a\nAbuela · en línea\n▶\nnota de voz\n▶\nnota de voz\n¿Cómo, mija? No te escuché bien...\n¿Cómo, mija? No te escuché bien...\nAhh — dice \"fish\", mija. ¡Muy bien!\n¿Cómo, mija? No te escuché bien...\n¿Cómo, mija? No te escuché bien...\n¿Cómo, mija? No te escuché bien...\n\nToca para hablar\n\nAdiós, Abuela 👋\n"
+  },
+  "wrongState": {
+    "slotsText": "",
+    "redX": false,
+    "text": "para Mamá:\n🔊\ne\ns\ni\nn\no\nb\nt\na\n"
+  },
+  "spelled": {
+    "exit": false,
+    "text": "para Mamá:\n🔊\ne\ns\ni\nn\no\nb\nt\na\n",
+    "sticky": false
+  },
+  "bmiss": {
+    "text": "A\nB\n🐣\n...?\n\nThe beans are in the soup.\n\n",
+    "hasError": false,
+    "sentence": "The beans are in the soup.",
+    "fs": "50px"
+  },
+  "bgrace": {
+    "text": "A\nB\n🐣\n\nThe milk was for the baby.\n\n📖 Buenas noches\n",
+    "exit": true,
+    "exitText": "📖 Buenas noches"
+  },
+  "bpass": {
+    "exit": true,
+    "exitText": "📖 Buenas noches",
+    "text": "A\nB\n😄\nba ba!\n\nThe milk was for the baby.\n\n📖 Buenas noches\n"
+  }
+}

@@ -1,0 +1,11 @@
+ProtocolError: Protocol error (Runtime.callFunctionOn): Promise was collected
+    at <instance_members_initializer> (/private/tmp/node_modules/puppeteer-core/lib/cjs/puppeteer/common/CallbackRegistry.js:101:14)
+    at new Callback (/private/tmp/node_modules/puppeteer-core/lib/cjs/puppeteer/common/CallbackRegistry.js:105:16)
+    at CallbackRegistry.create (/private/tmp/node_modules/puppeteer-core/lib/cjs/puppeteer/common/CallbackRegistry.js:23:26)
+    at Connection._rawSend (/private/tmp/node_modules/puppeteer-core/lib/cjs/puppeteer/cdp/Connection.js:93:26)
+    at CdpCDPSession.send (/private/tmp/node_modules/puppeteer-core/lib/cjs/puppeteer/cdp/CDPSession.js:68:33)
+    at #evaluate (/private/tmp/node_modules/puppeteer-core/lib/cjs/puppeteer/cdp/ExecutionContext.js:363:50)
+    at ExecutionContext.evaluate (/private/tmp/node_modules/puppeteer-core/lib/cjs/puppeteer/cdp/ExecutionContext.js:278:36)
+    at IsolatedWorld.evaluate (/private/tmp/node_modules/puppeteer-core/lib/cjs/puppeteer/cdp/IsolatedWorld.js:100:30)
+    at CdpFrame.evaluate (/private/tmp/node_modules/puppeteer-core/lib/cjs/puppeteer/api/Frame.js:348:43)
+    at CdpFrame.<anonymous> (/private/tmp/node_modules/puppeteer-core/lib/cjs/puppeteer/util/decorators.js:109:27)

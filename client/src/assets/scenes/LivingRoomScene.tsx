@@ -265,23 +265,20 @@ export function LivingRoomScene() {
           </g>
         </g>
 
-        {/* LAYER 4: SOFÍA'S HANDS + PHONE */}
+        {/* LAYER 4: SOFÍA'S HANDS + PHONE — screen stays flat cream (no vignette); mic is React overlay */}
         <g id="layer-hands" stroke="#6F4B35" strokeLinecap="round" strokeLinejoin="round" fill="none">
           <g transform="rotate(-4 640 700)">
-            {/* left cuff + forearm */}
             <path d="M 468 812 q -4 -52 34 -74 l 70 34 q -18 44 -12 52 Z" fill="#B3402F" strokeWidth="10" />
-            {/* phone body */}
             <rect x="512" y="486" width="258" height="330" rx="30" fill="#5A4436" strokeWidth="10" />
+            {/* Flat white screen — no shading overlays */}
             <rect x="526" y="500" width="230" height="302" rx="20" fill="#FFFAF0" strokeWidth="7" />
-            {/* mic button on phone */}
-            <circle cx="641" cy="716" r="78" fill="#E0674A" strokeWidth="10" />
-            <rect x="623" y="668" width="36" height="60" rx="18" fill="#FFFAF0" strokeWidth="3" />
-            <path d="M 605 712 q 0 40 36 40 q 36 0 36 -40 M 641 752 v 22 M 618 774 h 46" strokeWidth="14" stroke="#6F4B35" />
-            <path d="M 605 712 q 0 40 36 40 q 36 0 36 -40 M 641 752 v 22 M 618 774 h 46" strokeWidth="8" stroke="#FFFAF0" />
-            {/* right hand */}
+            {/* Mic ring drawn under React button for visual continuity */}
+            <circle cx="641" cy="680" r="78" fill="#E0674A" strokeWidth="10" />
+            <rect x="623" y="632" width="36" height="60" rx="18" fill="#FFFAF0" strokeWidth="3" />
+            <path d="M 605 676 q 0 40 36 40 q 36 0 36 -40 M 641 716 v 22 M 618 738 h 46" strokeWidth="14" stroke="#6F4B35" />
+            <path d="M 605 676 q 0 40 36 40 q 36 0 36 -40 M 641 716 v 22 M 618 738 h 46" strokeWidth="8" stroke="#FFFAF0" />
             <path d="M 774 812 q 10 -60 -18 -84 q -30 -12 -42 16 q -8 34 14 68 Z" fill="#D7AB87" strokeWidth="10" />
             <path d="M 742 742 q -18 -4 -20 18 q 0 20 22 26" fill="#D7AB87" strokeWidth="8" />
-            {/* left hand fingers */}
             <path d="M 512 640 q -26 -4 -26 20 q 2 20 28 18 M 512 692 q -30 -4 -28 20 q 2 20 30 16 M 514 742 q -28 -2 -26 20 q 4 18 28 14" fill="#D7AB87" strokeWidth="9" />
             <path d="M 500 812 q -6 -46 14 -60 l 40 20 q -10 24 -8 40 Z" fill="#D7AB87" strokeWidth="9" />
           </g>

@@ -42,7 +42,7 @@ export function DebugOverlay({ open, graph, seed, lastGrade }: DebugOverlayProps
     <div
       data-testid="debug-overlay"
       style={{
-        position: "fixed",
+        position: "absolute",
         inset: 0,
         pointerEvents: "none",
         zIndex: 9999,

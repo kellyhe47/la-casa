@@ -1,15 +1,16 @@
 import React, { useState, useEffect, useCallback, useRef } from "react";
 import { LivingRoomScene } from "../assets/AssetStore";
 import { ChatThread, type ChatMessage } from "../components/ChatThread";
+import { AbuelaAvatar } from "../components/AbuelaArt";
 import { grade } from "../grading/grade";
 import { getNodesForWord } from "../grading/wordNodes";
 import type { SkillGraph } from "../graph/SkillGraph";
 import { contentPipeline } from "../pipeline/ContentPipeline";
-import { STORY_BIBLE } from "../pipeline/storyBible";
 import { voices } from "../../../content/voices.json";
 
 const ABUELA_VOICE_ID = voices["voice.abuela"].elevenLabsVoiceID;
 const ABUELA_LANG = "es-MX";
+const VOICE_NOTE_TEXT = "Mija, ¿qué dice aquí?";
 
 type LoopState =
   | "wait"
@@ -32,7 +33,6 @@ function getFirstFrontierWord(graph: SkillGraph): string {
   const frontier = graph.frontier();
   if (frontier.length === 0) return "milk";
   const node = frontier[0];
-  // Map frontier node to a representative word
   const nodeWordMap: Record<string, string> = {
     g_sh: "fish", g_ee: "beans", g_th: "this", g_vb: "van",
     g_z: "zip", g_scl: "stop", g_ae: "cake", g_ch: "cheese",
@@ -41,46 +41,57 @@ function getFirstFrontierWord(graph: SkillGraph): string {
   return nodeWordMap[node.id] || "milk";
 }
 
+/** Prefer ElevenLabs; fall back to browser speech when proxy stubs (no key). */
+async function speakAbuela(text: string): Promise<void> {
+  try {
+    const buffer = await contentPipeline.fetchTTS({
+      text,
+      voiceId: ABUELA_VOICE_ID,
+      lang: ABUELA_LANG,
+    });
+    const blob = new Blob([buffer], { type: "audio/mpeg" });
+    const url = URL.createObjectURL(blob);
+    const audio = new Audio(url);
+    await audio.play();
+    await new Promise<void>((res) => {
+      audio.onended = () => res();
+      audio.onerror = () => res();
+    });
+    return;
+  } catch {
+    // Proxy stub / missing key — browser TTS so the note is still audible in demo
+  }
+  if (typeof window !== "undefined" && window.speechSynthesis) {
+    await new Promise<void>((resolve) => {
+      window.speechSynthesis.cancel();
+      const u = new SpeechSynthesisUtterance(text);
+      u.lang = "es-MX";
+      u.rate = 0.92;
+      u.onend = () => resolve();
+      u.onerror = () => resolve();
+      window.speechSynthesis.speak(u);
+    });
+  }
+}
+
 export function LivingRoomScreen({ graph, seed, onAdvance, independence }: LivingRoomScreenProps) {
   const [loopState, setLoopState] = useState<LoopState>("arrival");
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [currentWord, setCurrentWord] = useState(() => getFirstFrontierWord(graph));
-  const [currentImageUrl, setCurrentImageUrl] = useState<string | null>(null);
   const [missCount, setMissCount] = useState(0);
   const [itemCompleted, setItemCompleted] = useState(false);
   const [isExitDimmed, setIsExitDimmed] = useState(true);
   const [micActive, setMicActive] = useState(false);
   const recRef = useRef<SpeechRecognition | null>(null);
-  const audioRef = useRef<HTMLAudioElement | null>(null);
-  const idleTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
-
-  const playAudio = useCallback(async (text: string, voiceId: string) => {
-    try {
-      const buffer = await contentPipeline.fetchTTS({ text, voiceId, lang: ABUELA_LANG });
-      const blob = new Blob([buffer], { type: "audio/mpeg" });
-      const url = URL.createObjectURL(blob);
-      const audio = new Audio(url);
-      audioRef.current = audio;
-      await audio.play();
-      return new Promise<void>((res) => { audio.onended = () => res(); });
-    } catch {
-      // Living-scene wait: audio late, absorb silently
-    }
-  }, []);
+  const startedRef = useRef(false);
 
   const addMessage = useCallback((msg: ChatMessage) => {
     setMessages((prev) => [...prev, msg]);
   }, []);
 
-  const fetchCurrentImage = useCallback(async (word: string) => {
-    try {
-      const url = await contentPipeline.fetchImage({ word, seed });
-      setCurrentImageUrl(url);
-      return url;
-    } catch {
-      return null; // living-scene wait
-    }
-  }, [seed]);
+  const playVoiceNote = useCallback(async (text: string) => {
+    await speakAbuela(text);
+  }, []);
 
   const startListening = useCallback(() => {
     const SR = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
@@ -94,7 +105,6 @@ export function LivingRoomScreen({ graph, seed, onAdvance, independence }: Livin
       const transcript = e.results[0]?.[0]?.transcript || "";
       setMicActive(false);
       setLoopState("thinking");
-      // Grade with deterministic pure function (ADR-0001)
       const result = grade(transcript, currentWord);
       const nodeIds = getNodesForWord(currentWord);
 
@@ -105,27 +115,52 @@ export function LivingRoomScreen({ graph, seed, onAdvance, independence }: Livin
         setIsExitDimmed(false);
         setMissCount(0);
         addMessage({ id: Date.now().toString(), sender: "sofia", type: "text", text: currentWord });
-        // Abuela's delighted reply (prefetch next item)
         const replyText = `¡Sí! Dice "${currentWord}", ¡qué bien, mija!`;
         addMessage({ id: (Date.now() + 1).toString(), sender: "abuela", type: "text", text: replyText });
-        await playAudio(replyText, ABUELA_VOICE_ID);
+        await playVoiceNote(replyText);
         setLoopState("arrival");
-        // Move to next word from frontier
         const nextWord = getFirstFrontierWord(graph);
         setCurrentWord(nextWord);
-        fetchCurrentImage(nextWord);
-        // Prefetch next beat
-        contentPipeline.prefetchNext({ beat: "abuela", frontierTarget: graph.frontier()[0]?.id || "g_sh", independenceBand: independence, seed });
+        // Next photo + voice note
+        let imgUrl: string | undefined;
+        try {
+          imgUrl = await contentPipeline.fetchImage({ word: nextWord, seed });
+        } catch { /* stub */ }
+        addMessage({
+          id: `img-${Date.now()}`,
+          sender: "abuela",
+          type: "image",
+          imageUrl: imgUrl,
+          targetWord: nextWord,
+        });
+        addMessage({
+          id: `vn-${Date.now()}`,
+          sender: "abuela",
+          type: "voice-note",
+          text: VOICE_NOTE_TEXT,
+        });
+        addMessage({
+          id: `cap-${Date.now()}`,
+          sender: "abuela",
+          type: "text",
+          text: VOICE_NOTE_TEXT,
+        });
+        await playVoiceNote(VOICE_NOTE_TEXT);
+        contentPipeline.prefetchNext({
+          beat: "abuela",
+          frontierTarget: graph.frontier()[0]?.id || "g_sh",
+          independenceBand: independence,
+          seed,
+        });
       } else {
         const newMissCount = missCount + 1;
         setMissCount(newMissCount);
         graph.update([nodeIds[0] || "g_sh"], 0);
 
         if (newMissCount >= 2) {
-          // Grace pattern (R2.1)
           const graceText = `Ahh — dice "${currentWord}", mija. ¡Muy bien!`;
           addMessage({ id: Date.now().toString(), sender: "abuela", type: "text", text: graceText });
-          await playAudio(graceText, ABUELA_VOICE_ID);
+          await playVoiceNote(graceText);
           setItemCompleted(true);
           setIsExitDimmed(false);
           setMissCount(0);
@@ -133,15 +168,30 @@ export function LivingRoomScreen({ graph, seed, onAdvance, independence }: Livin
           setLoopState("arrival");
           const nextWord = getFirstFrontierWord(graph);
           setCurrentWord(nextWord);
-          fetchCurrentImage(nextWord);
+          let imgUrl: string | undefined;
+          try {
+            imgUrl = await contentPipeline.fetchImage({ word: nextWord, seed });
+          } catch { /* stub */ }
+          addMessage({
+            id: `img-${Date.now()}`,
+            sender: "abuela",
+            type: "image",
+            imageUrl: imgUrl,
+            targetWord: nextWord,
+          });
+          addMessage({
+            id: `vn-${Date.now()}`,
+            sender: "abuela",
+            type: "voice-note",
+            text: VOICE_NOTE_TEXT,
+          });
+          await playVoiceNote(VOICE_NOTE_TEXT);
         } else {
-          // Miss — Abuela re-prompts
           const missText = "¿Cómo, mija? No te escuché bien...";
           addMessage({ id: Date.now().toString(), sender: "abuela", type: "text", text: missText });
-          await playAudio(missText, ABUELA_VOICE_ID);
-          setLoopState("listening");
-          setMicActive(true);
-          startListening();
+          await playVoiceNote(missText);
+          setLoopState("arrival");
+          setMicActive(false);
         }
       }
     };
@@ -153,25 +203,38 @@ export function LivingRoomScreen({ graph, seed, onAdvance, independence }: Livin
     recRef.current = rec;
     setMicActive(true);
     setLoopState("listening");
-  }, [currentWord, missCount, graph, addMessage, playAudio, fetchCurrentImage, independence, seed]);
+  }, [currentWord, missCount, graph, addMessage, playVoiceNote, independence, seed]);
 
-  // Initialize first message on mount
+  // First exchange on mount: photo + voice note + autoplay
   useEffect(() => {
-    fetchCurrentImage(currentWord).then((imgUrl) => {
+    if (startedRef.current) return;
+    startedRef.current = true;
+    (async () => {
+      let imgUrl: string | undefined;
+      try {
+        imgUrl = await contentPipeline.fetchImage({ word: currentWord, seed });
+      } catch { /* living-scene: illustration fallback in ChatThread */ }
       addMessage({
         id: "init-image",
         sender: "abuela",
         type: "image",
-        imageUrl: imgUrl || undefined,
+        imageUrl: imgUrl,
         targetWord: currentWord,
       });
       addMessage({
         id: "init-voicenote",
         sender: "abuela",
         type: "voice-note",
-        text: "Mija, ¿qué dice aquí?",
+        text: VOICE_NOTE_TEXT,
       });
-    });
+      addMessage({
+        id: "init-caption",
+        sender: "abuela",
+        type: "text",
+        text: VOICE_NOTE_TEXT,
+      });
+      await playVoiceNote(VOICE_NOTE_TEXT);
+    })();
   }, []);
 
   const handleMicClick = useCallback(() => {
@@ -189,106 +252,114 @@ export function LivingRoomScreen({ graph, seed, onAdvance, independence }: Livin
     setLoopState("goodbye");
     const goodbyeText = "¡Te quiero, mija! ¡Hasta luego!";
     addMessage({ id: "goodbye", sender: "abuela", type: "text", text: goodbyeText });
-    await playAudio(goodbyeText, ABUELA_VOICE_ID);
+    await playVoiceNote(goodbyeText);
     setTimeout(onAdvance, 600);
-  }, [itemCompleted, isExitDimmed, addMessage, playAudio, onAdvance]);
+  }, [itemCompleted, isExitDimmed, addMessage, playVoiceNote, onAdvance]);
 
-  const micPulsing = loopState === "arrival" || loopState === "pass";
+  const presence =
+    loopState === "listening" || loopState === "thinking"
+      ? "escuchando…"
+      : loopState === "arrival"
+        ? "nota de voz · 0:04"
+        : "en línea";
 
   return (
     <div
       data-testid="living-room-screen"
       data-abuela-lang={ABUELA_LANG}
-      style={{ position: "relative", width: "100%", height: "100%", overflow: "hidden", fontFamily: "'Baloo 2', sans-serif" }}
+      style={{
+        position: "relative",
+        width: "100%",
+        height: "100%",
+        overflow: "hidden",
+        fontFamily: "'Baloo 2', sans-serif",
+      }}
     >
-      {/* Background scene */}
+      {/* Background scene — includes white phone + Sofía's hands */}
       <div style={{ position: "absolute", inset: 0 }}>
         <LivingRoomScene />
       </div>
 
-      {/* Chat thread overlay — slides from side, never covers bottom hands zone */}
+      {/* Chat overlay — design chrome */}
       <div
         style={{
           position: "absolute",
-          top: 0,
-          right: 0,
-          width: 380,
-          height: "calc(100% - 200px)",
-          background: "rgba(255,250,240,0.96)",
-          borderLeft: "3px solid #C98A54",
-          borderRadius: "16px 0 0 16px",
+          top: 48,
+          right: 20,
+          width: 368,
+          height: "calc(100% - 220px)",
           display: "flex",
           flexDirection: "column",
-          overflow: "hidden",
+          boxSizing: "border-box",
+          background: "#FFFAF0",
+          border: "6px solid #6F4B35",
+          borderRadius: 26,
+          padding: "16px 16px 14px",
+          zIndex: 5,
         }}
       >
-        {/* Presence line */}
-        <div style={{ background: "#E0674A", color: "#FFFAF0", padding: "8px 16px", fontSize: 13, fontWeight: 600 }}>
-          Abuela · {loopState === "listening" ? "escuchando..." : "en línea"}
+        <div
+          style={{
+            display: "flex",
+            alignItems: "center",
+            gap: 12,
+            paddingBottom: 8,
+            borderBottom: "4px solid #F3C1AC",
+          }}
+        >
+          <AbuelaAvatar size={52} />
+          <div style={{ flex: 1 }}>
+            <div style={{ fontWeight: 800, fontSize: 22, color: "#6F4B35", lineHeight: 1 }}>Abuela</div>
+            <div style={{ fontWeight: 600, fontSize: 15, color: "#B3402F" }}>{presence}</div>
+          </div>
         </div>
 
-        <ChatThread messages={messages} onPlayVoiceNote={(msg) => {
-          if (msg.audioBuffer) {
-            const blob = new Blob([msg.audioBuffer], { type: "audio/mpeg" });
-            const audio = new Audio(URL.createObjectURL(blob));
-            audio.play();
-          }
-        }} />
-      </div>
+        <ChatThread
+          messages={messages}
+          onPlayVoiceNote={(msg) => playVoiceNote(msg.text || VOICE_NOTE_TEXT)}
+        />
 
-      {/* Sofía's hands + phone (bottom-center) */}
-      <div style={{ position: "absolute", bottom: 0, left: "50%", transform: "translateX(-50%)", width: 320 }}>
-        {/* Phone frame */}
-        <div style={{ background: "#2A2A3A", borderRadius: "24px 24px 0 0", padding: 16, paddingBottom: 8, boxShadow: "0 -8px 32px rgba(0,0,0,0.5)" }}>
-          {/* Mic button ON the phone */}
-          <button
-            data-testid="mic-button"
-            onClick={handleMicClick}
-            style={{
-              width: 160,
-              height: 160,
-              borderRadius: "50%",
-              background: micActive ? "#C0492F" : "#E0674A",
-              border: "6px solid #6F4B35",
-              cursor: "pointer",
-              display: "flex",
-              alignItems: "center",
-              justifyContent: "center",
-              margin: "0 auto",
-              animation: micPulsing ? "mic-pulse 1.4s ease-in-out infinite" : micActive ? "mic-listen 0.8s ease-in-out infinite" : "none",
-              boxShadow: "0 6px 0 #6F4B35",
-              transition: "background 0.2s",
-            }}
-          >
-            {micActive ? (
-              <svg width="48" height="48" viewBox="0 0 48 48">
-                {/* Live waveform bars */}
-                {[4, 8, 12, 6, 10, 14, 8, 6, 12, 10, 8, 4].map((h, i) => (
-                  <rect key={i} x={i * 3.5 + 2} y={(16 - h / 2)} width={2.5} height={h} rx={1.25} fill="#FFF6D8" opacity={0.9} />
-                ))}
-              </svg>
-            ) : (
-              <svg width="48" height="48" viewBox="0 0 48 48" fill="none">
-                <rect x="18" y="8" width="12" height="20" rx="6" fill="#FFFAF0" />
-                <path d="M10 24 Q10 36 24 36 Q38 36 38 24" stroke="#FFFAF0" strokeWidth="3" fill="none" strokeLinecap="round" />
-                <line x1="24" y1="36" x2="24" y2="42" stroke="#FFFAF0" strokeWidth="3" />
-                <line x1="18" y1="42" x2="30" y2="42" stroke="#FFFAF0" strokeWidth="3" />
-              </svg>
-            )}
-          </button>
-          <p style={{ color: "#FFFAF0", textAlign: "center", fontSize: 12, marginTop: 8, opacity: 0.7 }}>
-            {loopState === "listening" ? "Escuchando..." : "Toca para hablar"}
-          </p>
-        </div>
-
-        {/* Sofía's hands holding the phone (red sleeve cuffs) */}
-        <div style={{ background: "#B3402F", height: 40, display: "flex", justifyContent: "space-between", padding: "0 20px", alignItems: "center" }}>
-          <div style={{ width: 60, height: 30, background: "#D7AB87", borderRadius: "0 0 20px 20px", border: "3px solid #6F4B35" }} />
-          <div style={{ width: 60, height: 30, background: "#D7AB87", borderRadius: "0 0 20px 20px", border: "3px solid #6F4B35" }} />
+        <div
+          style={{
+            display: "flex",
+            alignItems: "center",
+            gap: 10,
+            marginTop: 12,
+            background: "#FBE2D3",
+            border: "4px solid #6F4B35",
+            borderRadius: 999,
+            padding: "10px 18px",
+          }}
+        >
+          <div style={{ flex: 1, height: 12, borderRadius: 6, background: "#FFFAF0", border: "3px solid #E4C9A8" }} />
+          <svg viewBox="0 0 20 20" width="24" height="24" style={{ flex: "none" }}>
+            <rect x="7" y="2" width="6" height="10" rx="3" fill="#B3402F" />
+            <path d="M 4 9 q 0 7 6 7 q 6 0 6 -7 M 10 16 v 3" fill="none" stroke="#6F4B35" strokeWidth="2.5" strokeLinecap="round" />
+          </svg>
         </div>
       </div>
 
-      {/* "Adiós, Abuela" exit button — diegetic, only after first completed item */}
+      {/* Transparent mic hit-target over the SVG phone screen — no dark layover */}
+      <button
+        data-testid="mic-button"
+        onClick={handleMicClick}
+        aria-label="Micrófono"
+        style={{
+          position: "absolute",
+          left: "50%",
+          bottom: "9%",
+          transform: "translateX(-50%)",
+          width: 160,
+          height: 160,
+          borderRadius: "50%",
+          border: "none",
+          background: micActive ? "rgba(176,64,47,0.35)" : "transparent",
+          cursor: "pointer",
+          zIndex: 6,
+          animation: !micActive && loopState === "arrival" ? "mic-pulse 1.4s ease-in-out infinite" : "none",
+        }}
+      />
+
       {itemCompleted && (
         <button
           data-testid="exit-button"
@@ -307,21 +378,17 @@ export function LivingRoomScreen({ graph, seed, onAdvance, independence }: Livin
             fontWeight: 700,
             fontFamily: "'Baloo 2', sans-serif",
             cursor: isExitDimmed ? "default" : "pointer",
-            transition: "all 0.3s",
+            zIndex: 7,
           }}
         >
-          Adiós, Abuela 👋
+          Adiós, Abuela
         </button>
       )}
 
       <style>{`
         @keyframes mic-pulse {
-          0%, 100% { transform: scale(1); box-shadow: 0 6px 0 #6F4B35; }
-          50% { transform: scale(1.08); box-shadow: 0 8px 0 #6F4B35, 0 0 24px rgba(224,103,74,0.5); }
-        }
-        @keyframes mic-listen {
-          0%, 100% { transform: scale(1.05); }
-          50% { transform: scale(0.98); }
+          0%, 100% { box-shadow: 0 0 0 0 rgba(224,103,74,0.45); }
+          50% { box-shadow: 0 0 0 18px rgba(224,103,74,0); }
         }
       `}</style>
     </div>

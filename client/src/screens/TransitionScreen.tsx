@@ -51,20 +51,6 @@ export function TransitionScreen({ from: _from, to: _to, onComplete }: Transitio
       <div style={{ position: "absolute", inset: 0 }}>
         <TransitionScene />
       </div>
-      <div
-        style={{
-          position: "relative",
-          zIndex: 2,
-          fontFamily: "'Baloo 2', sans-serif",
-          color: "#6F4B35",
-          fontSize: 24,
-          opacity: 0.85,
-          textShadow: "0 1px 4px rgba(255,250,240,0.8)",
-          pointerEvents: "none",
-        }}
-      >
-        {canSkip ? "Tap to skip" : ""}
-      </div>
     </div>
   );
 }

@@ -51,7 +51,7 @@ export function TitleScreen({ onAdvance, onSessionStart }: TitleScreenProps) {
           flexDirection: "column",
           alignItems: "center",
           justifyContent: "flex-end",
-          paddingBottom: 80,
+          paddingBottom: 28,
         }}
       >
         {state === "idle" && (

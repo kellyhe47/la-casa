@@ -145,32 +145,49 @@ export default function App() {
         width: "100vw",
         height: "100vh",
         overflow: "hidden",
-        background: "#1a1a2e",
+        background: "#0a0a0a",
         fontFamily: "'Baloo 2', sans-serif",
+        display: "flex",
+        alignItems: "center",
+        justifyContent: "center",
+        padding: 24,
       }}
     >
-      {/* Main screen content — fills viewport, scene root fills width */}
+      {/* Letterboxed 16:10 stage — fits laptop so bottom chrome isn't clipped */}
       <div
         style={{
-          position: "absolute",
-          inset: 0,
-          display: "flex",
-          alignItems: "center",
-          justifyContent: "center",
+          position: "relative",
+          width: "min(100%, calc((100vh - 48px) * 1280 / 800))",
+          maxWidth: 1280,
+          aspectRatio: "1280 / 800",
+          border: "8px solid #000000",
+          borderRadius: 20,
+          overflow: "hidden",
+          background: "#1a1a2e",
+          boxShadow: "0 24px 80px rgba(0,0,0,0.65)",
+          flexShrink: 0,
         }}
       >
-        {renderScreen()}
-      </div>
+        <div
+          style={{
+            position: "absolute",
+            inset: 0,
+            width: "100%",
+            height: "100%",
+          }}
+        >
+          {renderScreen()}
+        </div>
 
-      {/* Debug overlay */}
-      {graph && (
-        <DebugOverlay
-          open={debugOpen}
-          graph={graph}
-          seed={sessionSeed}
-          lastGrade={lastGrade}
-        />
-      )}
+        {graph && (
+          <DebugOverlay
+            open={debugOpen}
+            graph={graph}
+            seed={sessionSeed}
+            lastGrade={lastGrade}
+          />
+        )}
+      </div>
     </div>
   );
 }
