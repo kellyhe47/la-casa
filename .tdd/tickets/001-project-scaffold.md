@@ -1,7 +1,7 @@
 ---
 id: "001"
 title: "Project scaffold: Vite+TS client + Node proxy"
-status: pending
+status: green
 depends_on: []
 touches:
   - client/
