@@ -5,7 +5,7 @@ import * as path from "path";
 // AC2: Server /health returns {ok:true}
 describe("AC2: GET /health", () => {
   it("returns 200 and {ok:true}", async () => {
-    const { createApp } = await import("../../../../server/app.js");
+    const { createApp } = await import("../../../server/app.js");
     // @ts-ignore - supertest may not be installed yet
     const supertest = (await import("supertest")).default;
     const app = createApp();
@@ -23,8 +23,8 @@ describe("AC3: POST /generate stub when no API key", () => {
     delete process.env.ANTHROPIC_API_KEY;
   });
   it("returns 503 {error:stub}", async () => {
-    const { generateHandler } = await import("../../../../server/routes/generate.js");
-    const { createApp } = await import("../../../../server/app.js");
+    const { generateHandler } = await import("../../../server/routes/generate.js");
+    const { createApp } = await import("../../../server/app.js");
     const supertest = (await import("supertest")).default;
     const app = createApp();
     const res = await supertest(app).post("/generate").send({ beat: "test" });
@@ -42,7 +42,7 @@ describe("AC4: POST /tts stub when no API key", () => {
     delete process.env.ELEVENLABS_API_KEY;
   });
   it("returns 503 {error:stub}", async () => {
-    const { createApp } = await import("../../../../server/app.js");
+    const { createApp } = await import("../../../server/app.js");
     const supertest = (await import("supertest")).default;
     const app = createApp();
     const res = await supertest(app).post("/tts").send({ text: "hello", voiceId: "x" });
@@ -60,7 +60,7 @@ describe("AC5: POST /image stub when no API key", () => {
     delete process.env.OPENAI_API_KEY;
   });
   it("returns 503 {error:stub}", async () => {
-    const { createApp } = await import("../../../../server/app.js");
+    const { createApp } = await import("../../../server/app.js");
     const supertest = (await import("supertest")).default;
     const app = createApp();
     const res = await supertest(app).post("/image").send({ word: "beans", seed: "abc" });

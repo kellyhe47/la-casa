@@ -1,5 +1,11 @@
 import express from 'express'
 import cors from 'cors'
+import * as fs from 'fs'
+import * as path from 'path'
+import { fileURLToPath } from 'url'
+
+const __dirname = path.dirname(fileURLToPath(import.meta.url))
+const clientDist = path.resolve(__dirname, '../client/dist')
 
 export function createApp() {
   const app = express()
@@ -45,6 +51,14 @@ export function createApp() {
       res.status(503).json({ error: 'stub' })
     }
   })
+
+  // Production: serve the built client (SPA) when it exists
+  if (fs.existsSync(clientDist)) {
+    app.use(express.static(clientDist))
+    app.get('*', (req, res) => {
+      res.sendFile(path.join(clientDist, 'index.html'))
+    })
+  }
 
   return app
 }

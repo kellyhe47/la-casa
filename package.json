@@ -3,7 +3,9 @@
   "private": true,
   "scripts": {
     "dev": "concurrently \"cd server && npm start\" \"cd client && npm run dev\"",
-    "install:all": "cd client && npm install && cd ../server && npm install"
+    "install:all": "cd client && npm install && cd ../server && npm install",
+    "build": "cd client && npm ci && npm run build && cd ../server && npm ci --omit=dev",
+    "start": "node server/index.js"
   },
   "devDependencies": {
     "concurrently": "^8.2.2"
