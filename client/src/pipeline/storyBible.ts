@@ -5,26 +5,26 @@ export const STORY_BIBLE = {
     characters: {
       abuela: {
         name: "Abuela",
-        voiceId: "hpp4J3VqNfWAUOO0d1Us",
+        voiceId: "hHjbwzYZW17oh0p05AKv",
         lang: "es-MX",
         personality: "warm, loving grandmother; always speaks Spanish; uses 'mija' as endearment",
         neverEnglish: true,
       },
       dad: {
         name: "Papá",
-        voiceId: "iP95p4xoKVk53GoZ742B",
+        voiceId: "86ZLAUcyPNBrbdJKn3u6",
         lang: "en-US",
         personality: "playful, punny, warm; hosts the fridge scene; dad jokes are gentle and silly",
       },
       baby: {
         name: "hermanito",
-        voiceId: "pFZP5JQG7iQjIQuC4Bku",
+        voiceId: "XjGYkUkzth8BPs29fmcV",
         lang: "en-US",
         personality: "baby brother; echoes sentences in baby voice; giggles on success; confused babble on miss",
       },
       mom: {
         name: "Mamá",
-        voiceId: "EXAVITQu4vr4xnSDxMaL",
+        voiceId: "FGLJyeekUzxl8M3CTG9M",
         lang: "en-US",
         personality: "gentle, warm; models sentences on miss; bilingual per independence band",
       },

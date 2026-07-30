@@ -1,25 +1,25 @@
 {
   "voices": {
     "voice.sofia": {
-      "elevenLabsVoiceID": "cgSgspJ2msm6clMCkdW9"
+      "elevenLabsVoiceID": "cgSgspJ2msm6clMCkdW9",
+      "label": "Jessica — young, playful (Sofía, unused in P0)"
     },
     "voice.mama": {
-      "elevenLabsVoiceID": "EXAVITQu4vr4xnSDxMaL"
+      "elevenLabsVoiceID": "FGLJyeekUzxl8M3CTG9M",
+      "label": "Laura – Warm Bilingual Latina (user pick)"
     },
     "voice.papa": {
-      "elevenLabsVoiceID": "iP95p4xoKVk53GoZ742B"
+      "elevenLabsVoiceID": "86ZLAUcyPNBrbdJKn3u6",
+      "label": "Chris – Confident, Serious, Direct (user pick)"
     },
     "voice.abuela": {
-      "elevenLabsVoiceID": "hpp4J3VqNfWAUOO0d1Us",
-      "defaultLang": "es-MX"
+      "elevenLabsVoiceID": "hHjbwzYZW17oh0p05AKv",
+      "defaultLang": "es-MX",
+      "label": "Gabriela – Warm, Rich and Balanced (user pick)"
     },
     "voice.baby": {
-      "elevenLabsVoiceID": "pFZP5JQG7iQjIQuC4Bku"
+      "elevenLabsVoiceID": "XjGYkUkzth8BPs29fmcV",
+      "label": "Teddy Twinkle – Cute Cartoon boy (hermanito)"
     }
-  },
-  "_userPaidPicks_needsElevenLabsStarterPlan": {
-    "voice.mama": "FGLJyeekUzxl8M3CTG9M",
-    "voice.papa": "86ZLAUcyPNBrbdJKn3u6",
-    "voice.abuela": "hHjbwzYZW17oh0p05AKv"
   }
 }

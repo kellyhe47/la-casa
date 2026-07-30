@@ -8,14 +8,12 @@
 #
 # Model: eleven_flash_v2_5 (fast, multilingual — handles es-MX and en-US).
 #
-# Voice slots -> ElevenLabs premade voice ids (chosen for family register;
-# all are default premades usable on the free tier — library voices like
-# Gigi/Charlotte 402 with "paid_plan_required"):
+# Voice slots -> ElevenLabs voice ids (Starter plan / user paid picks):
 #   voice.sofia  -> cgSgspJ2msm6clMCkdW9  (Jessica — young, playful female)
-#   voice.mama   -> EXAVITQu4vr4xnSDxMaL  (user-picked)
-#   voice.papa   -> iP95p4xoKVk53GoZ742B  (user-picked)
-#   voice.abuela -> hpp4J3VqNfWAUOO0d1Us  (user-picked)
-#   voice.baby   -> pFZP5JQG7iQjIQuC4Bku  (Lily — light, small voice)
+#   voice.mama   -> FGLJyeekUzxl8M3CTG9M  (Laura – Warm Bilingual Latina)
+#   voice.papa   -> 86ZLAUcyPNBrbdJKn3u6  (Chris – Confident, Serious, Direct)
+#   voice.abuela -> hHjbwzYZW17oh0p05AKv  (Gabriela – Warm, Rich and Balanced)
+#   voice.baby   -> XjGYkUkzth8BPs29fmcV  (Teddy Twinkle – Cute Cartoon boy)
 #
 # Exit code 0 only if every line rendered. On any failure the manifest should stay
 # status:"missing" for the failed lines (this script does not edit the manifest).
@@ -42,10 +40,10 @@ mkdir -p "$AUDIO_DIR"
 voice_id_for_slot() {
   case "$1" in
     voice.sofia)  echo "cgSgspJ2msm6clMCkdW9" ;;
-    voice.mama)   echo "EXAVITQu4vr4xnSDxMaL" ;;
-    voice.papa)   echo "iP95p4xoKVk53GoZ742B" ;;
-    voice.abuela) echo "hpp4J3VqNfWAUOO0d1Us" ;;
-    voice.baby)   echo "pFZP5JQG7iQjIQuC4Bku" ;;
+    voice.mama)   echo "FGLJyeekUzxl8M3CTG9M" ;;
+    voice.papa)   echo "86ZLAUcyPNBrbdJKn3u6" ;;
+    voice.abuela) echo "hHjbwzYZW17oh0p05AKv" ;;
+    voice.baby)   echo "XjGYkUkzth8BPs29fmcV" ;;
     *) echo "" ;;
   esac
 }
