@@ -1,4 +1,4 @@
-import { describe, it, expect, beforeEach } from "vitest";
+import { describe, it, expect, beforeEach, afterEach, vi } from "vitest";
 import { SkillGraph } from "./SkillGraph";
 import demoState from "../../../content/demo-state.json";
 
@@ -335,5 +335,242 @@ describe("SkillGraph — attempts truncation on serialize (E6)", () => {
 
     expect(wire.independence).toBe(7);
     expect(new SkillGraph(wire.nodes, wire.independence).independence()).toBe(7);
+  });
+});
+
+/* ------------------------------------------------------------------ *
+ * TICKET 021 — the ITEM history must survive a reload unchanged
+ *
+ * `update(nodeIds, result)` writes one entry per NODE to `node.attempts` but
+ * one entry per CALL to the internal item history that `recordItemBoundary()`
+ * reads. Since a pass credits EVERY node in `nodeIds`, a 3-node pass writes
+ * 3 node entries and 1 item entry. The constructor rebuilds the item history
+ * from `node.attempts`, so after save + reload that one item comes back as
+ * THREE — and the same play yields a different band depending on whether the
+ * kid reloaded.
+ *
+ * FIX (decided): the item history is an ITEM history — one entry per call —
+ * and is therefore SERIALIZED EXPLICITLY rather than rebuilt.
+ *
+ * IMPLEMENTATION CONTRACT ASSUMED BY THESE TESTS:
+ *   constructor(nodes: GraphNode[], independence?: number,
+ *               attempts?: Array<{result: 0|1; timestamp: number}>)
+ *   toJSON(): { nodes, independence, attempts }   // attempts capped at last 50
+ *   - no 3rd arg  → LEGACY FALLBACK: rebuild item history from node.attempts
+ *   - 3rd arg     → restore it VERBATIM
+ *
+ * NOT this ticket: recordItemBoundary's up/down thresholds (ticket 016 owns
+ * the band-down rule). This ticket only fixes WHAT GOES INTO the list.
+ * ------------------------------------------------------------------ */
+
+describe("SkillGraph — item history is one entry per item, serialized (021)", () => {
+  // update() stamps with Date.now(); fake timers give every call a distinct,
+  // deterministic timestamp so the rebuilt-vs-restored comparison never hinges
+  // on sub-millisecond ordering.
+  beforeEach(() => {
+    vi.useFakeTimers();
+    vi.setSystemTime(new Date("2026-01-01T00:00:00Z"));
+  });
+  afterEach(() => {
+    vi.useRealTimers();
+  });
+
+  const tick = () => vi.advanceTimersByTime(1000);
+
+  /** Three independent, un-attempted nodes. */
+  const threeNodes = () =>
+    [nodeWith("n_a", 0), nodeWith("n_b", 0), nodeWith("n_c", 0)] as any;
+
+  const TRIO = ["n_a", "n_b", "n_c"];
+
+  /** The item history as it is serialized. */
+  const itemHistory = (g: SkillGraph): Array<{ result: 0 | 1; timestamp: number }> =>
+    (g.toJSON() as any).attempts;
+
+  const wireOf = (g: SkillGraph) => JSON.parse(JSON.stringify(g.toJSON()));
+
+  /** Hydrate the way a post-021 client will: nodes + band + item history. */
+  const hydrate = (wire: any) =>
+    new SkillGraph(wire.nodes, wire.independence, wire.attempts);
+
+  // ─── AC: one entry per item, not per node ───
+  it("021: a multi-node pass appends exactly ONE entry to the item history", () => {
+    const g = new SkillGraph(threeNodes(), 5);
+
+    g.update(TRIO, 1);
+
+    // Three nodes each got credited...
+    expect(g.getNode("n_a")!.attempts.length).toBe(1);
+    expect(g.getNode("n_b")!.attempts.length).toBe(1);
+    expect(g.getNode("n_c")!.attempts.length).toBe(1);
+    // ...but that was ONE item.
+    expect(itemHistory(g)).toHaveLength(1);
+    expect(itemHistory(g)[0].result).toBe(1);
+  });
+
+  // ─── AC: toJSON() emits the third field ───
+  it("021: toJSON() emits `attempts` alongside `nodes` and `independence`", () => {
+    const g = new SkillGraph(threeNodes(), 5);
+    g.update(TRIO, 1);
+
+    const json = g.toJSON() as any;
+
+    expect(Object.keys(json).sort()).toEqual(["attempts", "independence", "nodes"]);
+    expect(Array.isArray(json.attempts)).toBe(true);
+    expect(() => JSON.stringify(json)).not.toThrow();
+  });
+
+  // ─── AC: hydrated item history === live item history ───
+  it("021 ROUND-TRIP: hydrated item history equals the live one — same length, entries, order", () => {
+    const g = new SkillGraph(threeNodes(), 5);
+    g.update(TRIO, 1); tick();
+    g.update(["n_a"], 0); tick();
+    g.update(["n_a", "n_b"], 1); tick();
+    g.update(TRIO, 1); tick();
+    g.update(["n_b"], 0); tick();
+
+    const live = itemHistory(g);
+    expect(live).toHaveLength(5); // 5 items, NOT 5 nodes-worth
+
+    const hydrated = hydrate(wireOf(g));
+
+    expect(itemHistory(hydrated)).toEqual(live);
+  });
+
+  // ─── AC: restored VERBATIM from the third argument ───
+  it("021: the third constructor argument is restored verbatim, not re-derived from nodes", () => {
+    const saved = [
+      { timestamp: 10, result: 1 as const },
+      { timestamp: 20, result: 0 as const },
+      { timestamp: 30, result: 1 as const },
+    ];
+
+    const g = new SkillGraph(threeNodes(), 7, saved);
+
+    expect(itemHistory(g)).toEqual(saved);
+  });
+
+  // ══════════════ THE BEHAVIOURAL CRUX ══════════════
+  // Same play, same band on both sides of a reload. This is the whole ticket.
+  it("021 CRUX: live and hydrated graphs produce the SAME band from recordItemBoundary()", () => {
+    const live = new SkillGraph(threeNodes(), 5);
+    // 3 misses (a miss debits only nodeIds[0]) then one 3-node pass.
+    live.update(["n_a"], 0); tick();
+    live.update(["n_a"], 0); tick();
+    live.update(["n_a"], 0); tick();
+    live.update(TRIO, 1); tick();
+
+    const reloaded = hydrate(wireOf(live));
+
+    live.recordItemBoundary();
+    reloaded.recordItemBoundary();
+
+    // Live sees 4 items [0,0,0,1] → 3 misses in the last 5 → band drops 5 → 4.
+    expect(live.independence()).toBe(4);
+    // Today the reload rebuilds [0,0,0,1,1,1] from node.attempts: only 2 misses
+    // in the last 5, so the band never drops. Same play, different kid.
+    expect(reloaded.independence()).toBe(live.independence());
+  });
+
+  // ─── AC: a 3-pass streak counts three ITEMS, not three nodes ───
+  it("021: three multi-node passes are a 3-item streak; ONE 3-node pass is not", () => {
+    // (a) one 3-node pass = one item → no streak → no band-up after reload
+    const one = new SkillGraph(threeNodes(), 5);
+    one.update(TRIO, 1); tick();
+    const oneReloaded = hydrate(wireOf(one));
+    oneReloaded.recordItemBoundary();
+    expect(oneReloaded.independence()).toBe(5);
+
+    // (b) three multi-node passes = three items → streak → band-up after reload
+    const three = new SkillGraph(threeNodes(), 5);
+    three.update(TRIO, 1); tick();
+    three.update(TRIO, 1); tick();
+    three.update(TRIO, 1); tick();
+    const threeReloaded = hydrate(wireOf(three));
+    threeReloaded.recordItemBoundary();
+    expect(threeReloaded.independence()).toBe(6);
+  });
+
+  // ─── AC: serialized item history capped at the last 50 ───
+  it("021: the serialized item history is capped at the last 50 items, most-recent kept, order preserved", () => {
+    const g = new SkillGraph(threeNodes(), 5);
+    const expected: Array<{ result: 0 | 1; timestamp: number }> = [];
+    for (let i = 0; i < 60; i++) {
+      const result = (i % 7 === 0 ? 0 : 1) as 0 | 1;
+      expected.push({ timestamp: Date.now(), result });
+      g.update(result === 1 ? TRIO : ["n_a"], result);
+      tick();
+    }
+
+    const serialized = itemHistory(g);
+
+    expect(serialized).toHaveLength(MAX_SERIALIZED_ATTEMPTS);
+    expect(serialized).toEqual(expected.slice(-MAX_SERIALIZED_ATTEMPTS));
+    // newest kept, oldest dropped, order oldest→newest
+    expect(serialized[serialized.length - 1].timestamp).toBe(expected[59].timestamp);
+    expect(serialized.map((a) => a.timestamp)).not.toContain(expected[0].timestamp);
+    const stamps = serialized.map((a) => a.timestamp);
+    expect(stamps).toEqual([...stamps].sort((a, b) => a - b));
+  });
+
+  it("021: serializing does not mutate the live graph's item history", () => {
+    const g = new SkillGraph(threeNodes(), 5);
+    for (let i = 0; i < 60; i++) {
+      g.update(TRIO, 1);
+      tick();
+    }
+
+    const first = itemHistory(g);
+    const second = itemHistory(g);
+
+    expect(first).toHaveLength(MAX_SERIALIZED_ATTEMPTS);
+    // Not 50-of-50-of-… : the live list is untouched, so a second serialize
+    // yields the same 50, from a copy rather than the live array spliced.
+    expect(second).toEqual(first);
+    expect(second).not.toBe(first);
+    expect((g as any)._allAttempts).toHaveLength(60);
+  });
+
+  // ─── AC: legacy fallback — a pre-021 saved state still hydrates ───
+  it("021 LEGACY FALLBACK: with no third argument the item history is rebuilt from node.attempts", () => {
+    const g = new SkillGraph(threeNodes(), 5);
+    g.update(TRIO, 1); tick();
+    g.update(["n_a"], 0); tick();
+
+    // A pre-021 payload: nodes + independence only, no `attempts` key.
+    const legacy = wireOf(g);
+    delete legacy.attempts;
+
+    const reloaded = new SkillGraph(legacy.nodes, legacy.independence);
+
+    expect(reloaded.independence()).toBe(5);
+    // Rebuilt exactly as today: every node attempt, sorted by timestamp.
+    const rebuilt = legacy.nodes
+      .flatMap((n: any) => n.attempts)
+      .sort((a: any, b: any) => a.timestamp - b.timestamp);
+    expect(itemHistory(reloaded)).toEqual(rebuilt);
+    expect(itemHistory(reloaded)).toHaveLength(4); // 3 nodes credited + 1 miss
+  });
+
+  // GUARD — passes today. Ticket 006 must not regress.
+  it("021 GUARD: ticket 006 band round-trip still holds (band 7 saves and hydrates as 7)", () => {
+    const g = new SkillGraph(threeNodes(), 7);
+    g.update(TRIO, 1); tick();
+
+    const wire = wireOf(g);
+
+    expect(wire.independence).toBe(7);
+    expect(new SkillGraph(wire.nodes, wire.independence).independence()).toBe(7);
+    expect(hydrate(wire).independence()).toBe(7);
+    expect(new SkillGraph(threeNodes()).independence()).toBe(3);
+  });
+
+  // GUARD — passes today. Ticket 013's PER-NODE cap is separate from the new
+  // per-ITEM cap and must keep working.
+  it("021 GUARD: ticket 013's per-node 50-cap still holds", () => {
+    const g = new SkillGraph([nodeWith("n_hot", 120)] as any, 5);
+
+    expect(g.toJSON().nodes[0].attempts).toHaveLength(MAX_SERIALIZED_ATTEMPTS);
+    expect(g.getNode("n_hot")!.attempts).toHaveLength(120);
   });
 });
