@@ -1,4 +1,65 @@
 {
-  "_comment": "SKELETON ONLY — created by the 018/G test-writer so the tests can import this module. The implementer authors the real Mom and Dad variants here (three per key: spanish-first / bilingual / english-only). Abuela and the baby are OUT OF SCOPE (PRD-v2 §8.3) — no abuela.* or baby.* keys belong in this file.",
-  "lines": {}
+  "_comment": "AUTHORED Mom and Dad dialogue, three variants per key (PRD-v2 §8, locked decisions D7 + D8). Never LLM-generated. Tiers: spanish-first (bands 1-4, most support — the line is Spanish, English carries only the target word), bilingual (bands 5-6 — the whole line in Spanish, then the whole line in English), english-only (bands 7-10, least support — no Spanish scaffolding; character names stay). English increases monotonically across the tiers, never the other way. `{word}` is the only placeholder; the screen substitutes the current target word. Abuela (Spanish always, by design) and the baby's pre-baked babble are OUT OF SCOPE (PRD-v2 §8.3) — no abuela.* or baby.* keys belong in this file.",
+  "lines": {
+    "dad.fridge.prompt.fish": {
+      "spanish-first": "¡Mija! Escríbele una nota a Mamá. Dile que trajimos... fish.",
+      "bilingual": "Mija, escríbele una nota a Mamá: dile que trajimos pescado. Write a note for Mamá — tell her we got the fish!",
+      "english-only": "Write a note for Mamá — tell her we got the fish! It was a little shellfish about coming home."
+    },
+    "dad.fridge.prompt.beans": {
+      "spanish-first": "Dejémosle una notita a Mamá sobre los... beans.",
+      "bilingual": "Dejémosle una notita a Mamá sobre los frijoles. Let's leave Mamá a little note about the beans!",
+      "english-only": "Let's leave Mamá a note about the beans. I have bean waiting all day to say that."
+    },
+    "dad.fridge.prompt.milk": {
+      "spanish-first": "En la nota para Mamá, escribe la palabra... milk.",
+      "bilingual": "Escribe leche en la nota para Mamá. Can you write milk on the note for Mamá?",
+      "english-only": "Can you write milk on the note for Mamá? Write it quick — we don't want this one to spoil."
+    },
+    "dad.fridge.prompt.shop": {
+      "spanish-first": "Escribe en la nota dónde estuvimos: en el... shop.",
+      "bilingual": "Escribe tienda en la nota, para que Mamá sepa dónde fuimos. Write shop on the note, so Mamá knows where we went!",
+      "english-only": "Write shop on the note so Mamá knows where we went. We shopped till we dropped... the beans."
+    },
+    "dad.fridge.prompt.stop": {
+      "spanish-first": "Tuvimos que parar en la tienda. Escribe... stop.",
+      "bilingual": "Escribe alto en la nota — tuvimos que parar en la tienda. Write a note — we had to stop at the store!",
+      "english-only": "Write a note — we had to stop at the store! And I could not stop thinking about dinner."
+    },
+    "dad.fridge.prompt.the": {
+      "spanish-first": "Ahora la palabrita más importante de todas: the.",
+      "bilingual": "Escribe the — ¡es la palabra más importante de todas! Write the — it's the most important word of all!",
+      "english-only": "Write the — it's the most important word of all. The one, the only, the the!"
+    },
+    "dad.fridge.prompt.van": {
+      "spanish-first": "¡Dile a Mamá que vimos una camioneta! Escribe... van.",
+      "bilingual": "Dile a Mamá que vimos una camioneta grande. Tell Mamá we saw a van — can you spell it?",
+      "english-only": "Tell Mamá we saw a van! Can you spell it? It van right past us."
+    },
+    "dad.fridge.prompt.default": {
+      "spanish-first": "Escribe {word} en la nota para Mamá.",
+      "bilingual": "Escribe {word} en la nota para Mamá. Spell {word} on the note for Mamá!",
+      "english-only": "Spell {word} on the note for Mamá — she loves your handwriting."
+    },
+    "dad.fridge.success": {
+      "spanish-first": "¡Sí! {word}. ¡Muy bien, mija!",
+      "bilingual": "¡Sí! {word}. ¡Qué bien lo hiciste, mija! Yes! {word}. You spelled it beautifully!",
+      "english-only": "Yes! {word}. That's exactly right — Mamá is going to love this note."
+    },
+    "dad.fridge.goodnight": {
+      "spanish-first": "Uy... ¡a dormir, mija! Lo hiciste muy bien hoy.",
+      "bilingual": "¡A dormir, mija! Lo hiciste muy bien hoy. Off to bed — you did great today!",
+      "english-only": "Off to bed! You did great today. Those notes are the best thing on that fridge."
+    },
+    "mom.bedroom.arrival": {
+      "spanish-first": "Mija, ¿puedes leerle un cuento al hermanito? Se duerme mejor con tu voz.",
+      "bilingual": "Mija, ¿puedes leerle un cuento al hermanito? Can you read a bedtime story to your baby brother?",
+      "english-only": "Can you read a bedtime story to your baby brother? He sleeps best when he hears your voice."
+    },
+    "mom.bedroom.goodnight": {
+      "spanish-first": "Buenas noches, hermanito. Buenas noches, mija.",
+      "bilingual": "Buenas noches, hermanito. Goodnight, little brother.",
+      "english-only": "Goodnight, little brother. Sweet dreams, you two."
+    }
+  }
 }

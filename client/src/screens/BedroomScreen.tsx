@@ -7,6 +7,7 @@ import { getNodesForWord } from "../grading/wordNodes";
 import type { SkillGraph } from "../graph/SkillGraph";
 import { contentPipeline } from "../pipeline/ContentPipeline";
 import { generateBedtimeSentence } from "../pipeline/sentenceGen";
+import { getLine } from "../pipeline/lines";
 import { voices } from "../../../content/voices.json";
 
 const BABY_VOICE_ID = (voices as any)["voice.baby"].elevenLabsVoiceID;
@@ -211,17 +212,18 @@ export function BedroomScreen({ graph, seed, onAdvance, independence, sessionPas
   const handleExit = useCallback(async () => {
     if (!pageCompleted) return;
     setLoopState("goodnight");
-    await playAudio("Buenas noches, hermanito", MOM_VOICE_ID);
+    await playAudio(getLine("mom.bedroom.goodnight", independence), MOM_VOICE_ID);
     setTimeout(onAdvance, 2000);
-  }, [pageCompleted, playAudio, onAdvance]);
+  }, [pageCompleted, playAudio, onAdvance, independence]);
 
   // Mom entrance on arrival
   useEffect(() => {
     if (loopState === "arrival") {
       setMomVisible(true);
-      const arrivalText = independence >= 7
-        ? "Can you read a bedtime story to your baby brother?"
-        : "Mija, ¿puedes leerle un cuento al hermanito? Can you read to him?";
+      // 018/G2: Mamá's arrival is band-tiered (D8) — spanish-first, bilingual,
+      // then English only. The baby's babble above is NOT: it is pre-baked
+      // (R4.3.0) and out of scope, as is Abuela's Spanish (PRD-v2 §8.3).
+      const arrivalText = getLine("mom.bedroom.arrival", independence);
       playAudio(arrivalText, MOM_VOICE_ID).then(() => {
         setMomVisible(false);
         setLoopState("reading");

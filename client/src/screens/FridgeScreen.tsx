@@ -8,6 +8,7 @@ import type { SkillGraph } from "../graph/SkillGraph";
 import { contentPipeline } from "../pipeline/ContentPipeline";
 import { appStore } from "../state/appStore";
 import { getFrontierWord } from "../pipeline/sessionPrefetch";
+import { getLine, hasLine } from "../pipeline/lines";
 import { voices } from "../../../content/voices.json";
 
 const DAD_VOICE_ID = (voices as any)["voice.papa"].elevenLabsVoiceID;
@@ -42,7 +43,20 @@ interface StickyNote {
 
 const NOTE_COLORS = ["#E8917A", "#F2C066", "#9DBBA4", "#B39ECF"];
 
-export function FridgeScreen({ graph, onAdvance, sessionMissedWords, sessionPassedWords = [] }: FridgeScreenProps) {
+/** 018/G2: an authored Papá line for this band, with the one supported
+ *  placeholder filled in. `{word}` is the only placeholder the table uses. */
+function dadLine(key: string, band: number, word: string): string {
+  return getLine(key, band).replace(/\{word\}/g, word);
+}
+
+/** The prompt key for a word — its own authored variant when there is one,
+ *  otherwise the generic prompt, which spells the word out via `{word}`. */
+function promptKeyFor(word: string): string {
+  const specific = `dad.fridge.prompt.${word}`;
+  return hasLine(specific) ? specific : "dad.fridge.prompt.default";
+}
+
+export function FridgeScreen({ graph, onAdvance, independence, sessionMissedWords, sessionPassedWords = [] }: FridgeScreenProps) {
   // Words already served this visit — never ask for the same word twice
   const usedWordsRef = useRef<Set<string>>(new Set());
   const pickWord = useCallback(() => {
@@ -92,17 +106,9 @@ export function FridgeScreen({ graph, onAdvance, sessionMissedWords, sessionPass
 
   // Dad's spoken prompt on mount/new word
   useEffect(() => {
-    const dadPrompts: Record<string, string> = {
-      fish: "Write a note for Mamá — tell her we got the fish!",
-      beans: "Let's leave a note about the beans, mija!",
-      milk: "Can you write milk on the note for Mamá?",
-      shop: "Write shop on the note, so Mamá knows where we went!",
-      stop: "Write a note — we had to stop at the store!",
-      the: "Write the — it's the most important word!",
-      van: "Tell Mamá we saw a van! Can you spell it?",
-      default: `Spell ${currentWord} on the note for Mamá!`,
-    };
-    const prompt = dadPrompts[currentWord] || dadPrompts.default;
+    // 018/G2: the prompt is the authored variant for this session's band —
+    // Spanish-first low, bilingual in the middle, English only up top (D8).
+    const prompt = dadLine(promptKeyFor(currentWord), independence, currentWord);
     // Speak the word (R4.4.1: no caption, audio only)
     playAudio(prompt, DAD_VOICE_ID);
     setLoopState("prompt");
@@ -153,7 +159,7 @@ export function FridgeScreen({ graph, onAdvance, sessionMissedWords, sessionPass
     setLoopState("stick");
 
     // Speak completion
-    playAudio(`¡Sí! ${currentWord}! Excellent, mija!`, DAD_VOICE_ID);
+    playAudio(dadLine("dad.fridge.success", independence, currentWord), DAD_VOICE_ID);
 
     // Move to next word after short delay
     setTimeout(() => {
@@ -162,21 +168,19 @@ export function FridgeScreen({ graph, onAdvance, sessionMissedWords, sessionPass
       setTrayKey((k) => k + 1);
       setLoopState("prompt");
     }, 2000);
-  }, [currentWord, graph, playAudio, pickWord]);
+  }, [currentWord, graph, playAudio, pickWord, independence]);
 
   const handleExit = useCallback(async () => {
     if (!itemCompleted) return;
     setLoopState("goodnight");
-    await playAudio("Uy... ¡a dormir, mija! You did great today!", DAD_VOICE_ID);
+    await playAudio(dadLine("dad.fridge.goodnight", independence, currentWord), DAD_VOICE_ID);
     setTimeout(onAdvance, 1800);
-  }, [itemCompleted, playAudio, onAdvance]);
+  }, [itemCompleted, playAudio, onAdvance, independence, currentWord]);
 
+  /** R4.4.2: the speaker button re-says the target word itself — the prompt's
+   *  scaffolding is band-tiered, but the word the child is spelling is not. */
   const handleReplayPrompt = useCallback(() => {
-    const dadPrompts: Record<string, string> = {
-      fish: "fish", beans: "beans", milk: "milk", shop: "shop",
-      stop: "stop", van: "van", the: "the",
-    };
-    playAudio(dadPrompts[currentWord] || currentWord, DAD_VOICE_ID);
+    playAudio(currentWord, DAD_VOICE_ID);
   }, [currentWord, playAudio]);
 
   return (

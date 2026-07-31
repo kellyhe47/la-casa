@@ -1,10 +1,10 @@
 ---
 id: 018
 title: "G1/G2 — content/lines.json + getLine(key, band) tier resolution"
-status: tests-written
+status: green
 depends_on: [017]
 touches: [content/lines.json, client/src/pipeline/lines.ts, client/src/pipeline/lines.test.ts, client/src/screens/FridgeScreen.tsx, client/src/screens/BedroomScreen.tsx]
-iterations: 0
+iterations: 1
 test_files: [client/src/pipeline/lines.test.ts, client/src/screens/FridgeScreen.test.tsx, client/src/screens/BedroomScreen.test.tsx]
 branch: ""
 ---
