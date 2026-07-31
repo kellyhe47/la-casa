@@ -1,5 +1,8 @@
 import type { GraphNode } from "./types";
 
+/** E6: most recent attempts kept per node when serializing. */
+const MAX_SERIALIZED_ATTEMPTS = 50;
+
 export class SkillGraph {
   nodes: GraphNode[];
   private _independence: number;
@@ -84,9 +87,22 @@ export class SkillGraph {
     return this._independence;
   }
 
+  /**
+   * E6: serialize with each node's attempt log capped at the last 50, keeping
+   * the wire payload flat at ~6KB forever. Truncation happens HERE, not on
+   * record — the live session keeps its full history, so the returned nodes
+   * (and their attempt arrays) are copies, never the live ones spliced.
+   *
+   * 50 is a floor with margin: recordItemBoundary reads the last 20 and
+   * _allAttempts is rebuilt from node.attempts on hydrate, so a smaller window
+   * would corrupt band computation after a reload.
+   */
   toJSON(): { nodes: GraphNode[]; independence: number } {
     return {
-      nodes: this.nodes,
+      nodes: this.nodes.map((n) => ({
+        ...n,
+        attempts: n.attempts.slice(-MAX_SERIALIZED_ATTEMPTS),
+      })),
       independence: this._independence,
     };
   }

@@ -1,11 +1,11 @@
 ---
 id: 013
 title: "E6 — truncate node attempts to the last 50 on serialize"
-status: pending
+status: green
 depends_on: [006]
 touches: [client/src/graph/SkillGraph.ts, client/src/graph/SkillGraph.test.ts]
-iterations: 0
-test_files: []
+iterations: 1
+test_files: [client/src/graph/SkillGraph.test.ts]
 branch: ""
 ---
 

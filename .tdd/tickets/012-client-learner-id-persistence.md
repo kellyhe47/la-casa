@@ -1,11 +1,11 @@
 ---
 id: 012
 title: "E2/E4 — client learner UUID + fire-and-forget state writes"
-status: pending
+status: green
 depends_on: [011, 006]
 touches: [client/src/state/learnerId.ts, client/src/state/appStore.ts, client/src/pipeline/ContentPipeline.ts, client/src/pipeline/telemetry.ts]
-iterations: 0
-test_files: []
+iterations: 1
+test_files: [client/src/state/learnerId.test.ts, client/src/pipeline/telemetry.test.ts, client/src/state/appStore.test.ts]
 branch: ""
 ---
 

@@ -1,3 +1,5 @@
+import { apiHeaders } from "../state/learnerId";
+
 export interface TextCacheKey {
   beat: string;
   frontierTarget: string;
@@ -80,7 +82,7 @@ export class ContentPipeline {
     return this.dedupe(this._textCache, textKey(key), async () => {
       const res = await fetchWithRetry("/generate", {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: apiHeaders(),
         body: JSON.stringify(key),
       });
       if (!res.ok) {
@@ -95,7 +97,7 @@ export class ContentPipeline {
     return this.dedupe(this._audioCache, audioKey(key), async () => {
       const res = await fetchWithRetry("/tts", {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: apiHeaders(),
         body: JSON.stringify({ text: key.text, voiceId: key.voiceId, lang: key.lang }),
       });
       if (!res.ok) {
@@ -109,7 +111,7 @@ export class ContentPipeline {
     return this.dedupe(this._imageCache, imageKey(key), async () => {
       const res = await fetchWithRetry("/image", {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: apiHeaders(),
         body: JSON.stringify({ word: key.word }),
       });
       if (!res.ok) {

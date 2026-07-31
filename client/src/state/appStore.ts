@@ -4,6 +4,7 @@ import type { Screen, MicState } from "./types";
 import { SCREEN_ORDER } from "./types";
 import demoState from "../../../content/demo-state.json";
 import type { GraphNode } from "../graph/types";
+import { saveLearnerState } from "./saveState";
 
 export interface AppState {
   screen: Screen;
@@ -63,6 +64,9 @@ export function createAppStore() {
       if (!graph) return;
       graph.update(nodeIds, result);
       graph.recordItemBoundary();
+      // E4/D13: fire-and-forget save at every item boundary, after the band has
+      // ticked so the written independence is the live one.
+      saveLearnerState(graph);
       if (result === 0) {
         set((state) => ({ sessionMissedWords: [...state.sessionMissedWords, word] }));
       } else {
