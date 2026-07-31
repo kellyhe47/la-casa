@@ -9,12 +9,29 @@ export class SkillGraph {
   // Track all graded attempts for independence computation
   private _allAttempts: Array<{ result: 0 | 1; timestamp: number }>;
 
-  constructor(nodes: GraphNode[], independence?: number) {
+  /**
+   * @param attempts the saved ITEM history (one entry per graded item, not per
+   *   node). Restored VERBATIM when supplied. When absent — a pre-021 saved
+   *   state — fall back to rebuilding it from node.attempts so legacy payloads
+   *   still hydrate rather than coming back empty.
+   */
+  constructor(
+    nodes: GraphNode[],
+    independence?: number,
+    attempts?: Array<{ result: 0 | 1; timestamp: number }>,
+  ) {
     this.nodes = nodes.map((n) => ({ ...n, attempts: [...(n.attempts || [])] }));
     // E5: resume a saved band when one is supplied; E8/R5.3: new players start at 3
     this._independence = independence ?? 3;
+
+    if (attempts) {
+      this._allAttempts = attempts.map((a) => ({ ...a }));
+      return;
+    }
+
+    // Legacy fallback: no serialized item history, so approximate it from the
+    // per-node attempt logs (exactly the pre-021 behaviour).
     this._allAttempts = [];
-    // Load existing attempts from nodes into global list for independence computation
     for (const node of this.nodes) {
       for (const attempt of node.attempts) {
         this._allAttempts.push(attempt);
@@ -93,17 +110,26 @@ export class SkillGraph {
    * record — the live session keeps its full history, so the returned nodes
    * (and their attempt arrays) are copies, never the live ones spliced.
    *
-   * 50 is a floor with margin: recordItemBoundary reads the last 20 and
-   * _allAttempts is rebuilt from node.attempts on hydrate, so a smaller window
-   * would corrupt band computation after a reload.
+   * 50 is a floor with margin: recordItemBoundary reads the last 20, so a
+   * smaller window would corrupt band computation after a reload.
+   *
+   * 021: the ITEM history rides along under `attempts` — one entry per graded
+   * item — because it can no longer be re-derived from node.attempts (a
+   * multi-node pass is one item but N node attempts). Same last-50 cap, same
+   * copy-not-splice rule.
    */
-  toJSON(): { nodes: GraphNode[]; independence: number } {
+  toJSON(): {
+    nodes: GraphNode[];
+    independence: number;
+    attempts: Array<{ result: 0 | 1; timestamp: number }>;
+  } {
     return {
       nodes: this.nodes.map((n) => ({
         ...n,
         attempts: n.attempts.slice(-MAX_SERIALIZED_ATTEMPTS),
       })),
       independence: this._independence,
+      attempts: this._allAttempts.slice(-MAX_SERIALIZED_ATTEMPTS),
     };
   }
 }

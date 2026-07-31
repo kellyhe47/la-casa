@@ -1,11 +1,11 @@
 ---
 id: 021
 title: "_allAttempts diverges from node.attempts across a reload"
-status: pending
+status: green
 depends_on: [013]
 touches: [client/src/graph/SkillGraph.ts, client/src/graph/SkillGraph.test.ts]
-iterations: 0
-test_files: []
+iterations: 1
+test_files: [client/src/graph/SkillGraph.test.ts]
 branch: ""
 ---
 
