@@ -1,11 +1,11 @@
 ---
 id: 001
 title: Server test harness + Postgres store interface
-status: pending
+status: green
 depends_on: []
 touches: [server/package.json, server/store.js, server/store.test.js, server/schema.sql, server/index.js]
 iterations: 0
-test_files: []
+test_files: [server/store.test.js]
 branch: ""
 ---
 
