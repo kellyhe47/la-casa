@@ -12,6 +12,7 @@ import { generateBeat } from './routes/generate.js'
 import { ttsHandler } from './routes/tts.js'
 import { imageHandler } from './routes/image.js'
 import { eventsHandler } from './routes/events.js'
+import { getStateHandler, putStateHandler } from './routes/state.js'
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url))
 const clientDist = path.resolve(__dirname, '../client/dist')
@@ -69,6 +70,11 @@ export function createApp({ store } = {}) {
   app.post('/image', requireProvider('openai', imageHandler))
 
   app.post('/events', eventsHandler(resolveStore))
+
+  // PRD §6 E1/E3 — must stay ABOVE the SPA catch-all below, or an unknown
+  // learner is answered 200 index.html instead of 404.
+  app.get('/state/:id', getStateHandler(resolveStore))
+  app.put('/state/:id', putStateHandler(resolveStore))
 
   // Production: serve the built client (SPA) when it exists.
   // Keep this LAST — PRD §9 registers /observability and /debug/* above it.

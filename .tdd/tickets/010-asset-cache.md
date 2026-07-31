@@ -1,11 +1,11 @@
 ---
 id: 010
 title: "D1/D2/D3 — server-side global asset cache for images and TTS"
-status: pending
+status: green
 depends_on: [005, 008]
 touches: [server/store.js, server/schema.sql, server/assetCache.js, server/routes/image.js, server/routes/tts.js, server/app.js]
-iterations: 0
-test_files: []
+iterations: 1
+test_files: [server/assetCache.test.js]
 branch: ""
 ---
 

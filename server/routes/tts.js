@@ -1,7 +1,21 @@
+import { readAsset, ttsCacheKey, writeAsset } from '../assetCache.js'
 import { apiKey, callUpstream, sendUpstreamFailure } from '../upstream.js'
+
+const sendAudio = (res, bytes) => {
+  res.setHeader('Content-Type', 'audio/mpeg')
+  res.send(Buffer.from(bytes))
+}
 
 export async function ttsHandler(req, res) {
   const { text, voiceId, lang } = req.body ?? {}
+
+  // PRD §5: almost all TTS text is a fixed string, so the hit rate approaches
+  // 100% after a few sessions — and ElevenLabs bills per character.
+  const key = ttsCacheKey({ text, voiceId, lang })
+  const cached = await readAsset({ key, provider: 'elevenlabs' })
+  if (cached) {
+    return sendAudio(res, cached.bytes)
+  }
 
   const result = await callUpstream({
     provider: 'elevenlabs',
@@ -24,10 +38,12 @@ export async function ttsHandler(req, res) {
     },
   })
   if (!result.ok) {
+    // Failures are never cached — the next call retries the provider.
     return sendUpstreamFailure(res, result.failure)
   }
 
-  const buffer = await result.response.arrayBuffer()
-  res.setHeader('Content-Type', 'audio/mpeg')
-  res.send(Buffer.from(buffer))
+  const buffer = Buffer.from(await result.response.arrayBuffer())
+  await writeAsset({ key, kind: 'tts', mime: 'audio/mpeg', bytes: buffer })
+
+  sendAudio(res, buffer)
 }

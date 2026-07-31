@@ -1,11 +1,11 @@
 ---
 id: 011
 title: "E1/E3 — learners + learner_state schema and GET/PUT /state/:id"
-status: pending
+status: green
 depends_on: [007]
 touches: [server/store.js, server/schema.sql, server/routes/state.js, server/app.js]
-iterations: 0
-test_files: []
+iterations: 1
+test_files: [server/state.test.js]
 branch: ""
 ---
 
