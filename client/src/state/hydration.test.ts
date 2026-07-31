@@ -346,12 +346,17 @@ describe("TICKET 014 — E7/E8: silent hydration on startup with exact band resu
 
   it("021/E7: a hydrated graph's next recordItemBoundary() behaves exactly as the live graph would", async () => {
     // Sequence chosen so the node-attempt fallback and the true item history
-    // DISAGREE about the next band: item history [0,0,1] then a pass stays at
-    // 5, while the rebuilt [0,0,1,1,1] then a pass trips the 3-pass streak
-    // and promotes to 6.
+    // DISAGREE about the next band: item history [0,1] then a pass leaves the
+    // last three items [0,1,1] — no 3-pass streak, so the band stays at 5 —
+    // while the rebuilt [0,1,1,1] then a pass reads as [1,1,1] and promotes
+    // to 6.
+    //
+    // 016 NOTE: this used to open with TWO misses. Ticket 016 makes two
+    // consecutive missed ITEMS cost a band, which would move this fixture for
+    // reasons that have nothing to do with hydration, so the second miss is
+    // gone. The discriminator was always the band-UP rule (a multi-node pass
+    // expands into N entries under the fallback) and still is.
     const live = new SkillGraph(threeNodes(), 5);
-    live.update(["n_a"], 0);
-    live.recordItemBoundary();
     live.update(["n_a"], 0);
     live.recordItemBoundary();
     live.update(TRIO, 1);

@@ -136,3 +136,82 @@ describe("LivingRoomScreen", () => {
     }
   });
 });
+
+/* ------------------------------------------------------------------ *
+ * TICKET 016 — F3: the MISS branch must record an item boundary
+ *
+ * F1 makes two consecutive missed ITEMS cost a band, but the band can only
+ * move when `recordItemBoundary()` is called. Today the living room calls it
+ * on the pass branch and on the grace branch (second miss) only — the
+ * single-miss branch records the miss into the graph and then never lets the
+ * band tick. Without this the new rule can never fire.
+ * ------------------------------------------------------------------ */
+describe("LivingRoomScreen — miss branch records an item boundary (016/F3)", () => {
+  /** jsdom never fires `ended`, so a *successful* TTS stub deadlocks the
+   *  exchange. Reject the fetch instead: speakAbuela falls through to its
+   *  catch, and jsdom has no speechSynthesis, so it resolves immediately. */
+  function silenceAbuela() {
+    return vi
+      .spyOn(contentPipeline, "fetchTTS")
+      .mockRejectedValue(new Error("no tts in jsdom"));
+  }
+
+  /** Drive one spoken attempt through the screen's recognition handler. */
+  async function speak(transcript: string) {
+    fireEvent.click(screen.getByTestId("mic-button"));
+    await act(async () => {
+      await srInstance.onresult({ results: [[{ transcript }]] } as any);
+    });
+  }
+
+  it("016 F3: a single miss calls recordItemBoundary()", async () => {
+    const tts = silenceAbuela();
+    try {
+      const g = makeGraph();
+      const boundary = vi.spyOn(g, "recordItemBoundary");
+      render(<LivingRoomScreen graph={g} seed="test" onAdvance={() => {}} independence={3} />);
+
+      await speak("qqqqqq"); // nothing like the target word → miss
+
+      expect(boundary).toHaveBeenCalledTimes(1);
+    } finally {
+      tts.mockRestore();
+    }
+  });
+
+  it("016 F1+F3: two consecutive missed items drop the band by one, end to end", async () => {
+    const tts = silenceAbuela();
+    try {
+      // Third arg `[]`: demo-state's nodes carry a pre-baked attempt log, so
+      // without it the legacy fallback hands this kid ~60 items of history and
+      // the two misses below are no longer the only items in play.
+      const g = new SkillGraph(demoState.nodes as unknown as GraphNode[], 5, []);
+      render(<LivingRoomScreen graph={g} seed="test" onAdvance={() => {}} independence={3} />);
+
+      await speak("qqqqqq");
+      expect(g.independence()).toBe(5); // one miss is not two
+
+      await speak("qqqqqq"); // second miss → grace, and the band gives way
+      expect(g.independence()).toBe(4);
+    } finally {
+      tts.mockRestore();
+    }
+  });
+
+  // GUARD — passes today. A pass must still record exactly one boundary; F3
+  // adds a call to the miss branch, it does not double up the pass branch.
+  it("016 F3 GUARD: a pass still records exactly one item boundary", async () => {
+    const tts = silenceAbuela();
+    try {
+      const g = makeGraph();
+      const boundary = vi.spyOn(g, "recordItemBoundary");
+      render(<LivingRoomScreen graph={g} seed="test" onAdvance={() => {}} independence={3} />);
+
+      await speak(getFirstFrontierWord(g));
+
+      expect(boundary).toHaveBeenCalledTimes(1);
+    } finally {
+      tts.mockRestore();
+    }
+  });
+});

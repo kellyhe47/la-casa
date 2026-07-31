@@ -452,12 +452,19 @@ describe("SkillGraph — item history is one entry per item, serialized (021)", 
 
   // ══════════════ THE BEHAVIOURAL CRUX ══════════════
   // Same play, same band on both sides of a reload. This is the whole ticket.
+  //
+  // 016 NOTE: this case originally discriminated through the band-DOWN rule
+  // (item history [0,0,0,1] → 3 misses in the last 5 → drop; the rebuilt
+  // [0,0,0,1,1,1] → only 2 → no drop). Ticket 016 replaces that rule with
+  // "two CONSECUTIVE misses", which a multi-node pass can never change (a pass
+  // expands into 1s either way), so the down path can no longer tell the two
+  // histories apart. The discriminator moved to the band-UP rule, which the
+  // expansion does change: 3 items vs 7.
   it("021 CRUX: live and hydrated graphs produce the SAME band from recordItemBoundary()", () => {
     const live = new SkillGraph(threeNodes(), 5);
-    // 3 misses (a miss debits only nodeIds[0]) then one 3-node pass.
+    // One miss (a miss debits only nodeIds[0]) then two 3-node passes.
     live.update(["n_a"], 0); tick();
-    live.update(["n_a"], 0); tick();
-    live.update(["n_a"], 0); tick();
+    live.update(TRIO, 1); tick();
     live.update(TRIO, 1); tick();
 
     const reloaded = hydrate(wireOf(live));
@@ -465,10 +472,11 @@ describe("SkillGraph — item history is one entry per item, serialized (021)", 
     live.recordItemBoundary();
     reloaded.recordItemBoundary();
 
-    // Live sees 4 items [0,0,0,1] → 3 misses in the last 5 → band drops 5 → 4.
-    expect(live.independence()).toBe(4);
-    // Today the reload rebuilds [0,0,0,1,1,1] from node.attempts: only 2 misses
-    // in the last 5, so the band never drops. Same play, different kid.
+    // Live sees 3 items [0,1,1] — the last three are not all passes, so there
+    // is no streak and the band holds at 5.
+    expect(live.independence()).toBe(5);
+    // A rebuild from node.attempts would see [0,1,1,1,1,1,1]: last three all
+    // passes, candidate 9 > 5 → promoted to 6. Same play, different kid.
     expect(reloaded.independence()).toBe(live.independence());
   });
 
@@ -572,5 +580,191 @@ describe("SkillGraph — item history is one entry per item, serialized (021)", 
 
     expect(g.toJSON().nodes[0].attempts).toHaveLength(MAX_SERIALIZED_ATTEMPTS);
     expect(g.getNode("n_hot")!.attempts).toHaveLength(120);
+  });
+});
+
+/* ------------------------------------------------------------------ *
+ * TICKET 016 — F1: the band comes DOWN on TWO CONSECUTIVE MISSES
+ *
+ * PRD-v2 §7: "Bands ratchet upward and realistically never fall... a
+ * struggling kid climbs to 7+ and is permanently stranded in an English-only
+ * world." The MVP rule — ≥3 misses in the last 5 items — can never fire,
+ * because grace caps consecutive misses at 2. Locked decision D9 replaces it:
+ *
+ *   DOWN: the last TWO items are both misses  → independence − 1, floor 1
+ *   UP:   unchanged — candidate > band AND the last 3 items are all passes,
+ *         ceiling 10
+ *
+ * Since two consecutive misses is exactly the grace trigger, the rule reads:
+ * every graced item costs a band. Net shape: up 1 slowly, down 1 immediately
+ * on a failed item — a kid can never get stranded.
+ *
+ * 021 CONTEXT: `_allAttempts` is a per-ITEM history (one entry per update()
+ * call), so "two consecutive misses" means two consecutive ITEMS. Nothing here
+ * may reintroduce per-node counting.
+ *
+ * Hysteresis is unchanged: one recordItemBoundary() call moves the band by at
+ * most one, however many misses piled up since the last call.
+ * ------------------------------------------------------------------ */
+
+describe("SkillGraph — band-down on two consecutive misses (016/F1)", () => {
+  /** Three independent, un-attempted nodes. */
+  const threeNodes = () =>
+    [nodeWith("n_a", 0), nodeWith("n_b", 0), nodeWith("n_c", 0)] as any;
+  const TRIO = ["n_a", "n_b", "n_c"];
+
+  /** One missed item (a miss debits only the frontier target). */
+  const miss = (g: SkillGraph) => g.update(["n_a"], 0);
+  /** One passed item (a pass credits every node in the item). */
+  const pass = (g: SkillGraph) => g.update(TRIO, 1);
+
+  const at = (band: number) => new SkillGraph(threeNodes(), band);
+
+  // ─── THE HEADLINE RULE ───
+  it("016 F1: two consecutive misses drop the band by exactly 1", () => {
+    const g = at(5);
+
+    miss(g);
+    g.recordItemBoundary();
+    expect(g.independence()).toBe(5); // one miss is not two — nothing moves yet
+
+    miss(g);
+    g.recordItemBoundary();
+    expect(g.independence()).toBe(4); // exactly one band, not two
+  });
+
+  it("016 F1: hysteresis — a single boundary call never moves more than one band, however many misses accumulated", () => {
+    const two = at(8);
+    miss(two);
+    miss(two);
+    two.recordItemBoundary();
+    expect(two.independence()).toBe(7);
+
+    const five = at(8);
+    for (let i = 0; i < 5; i++) miss(five);
+    five.recordItemBoundary();
+    expect(five.independence()).toBe(7);
+  });
+
+  it("016 F1: a third consecutive miss followed by a boundary drops another band", () => {
+    const g = at(5);
+
+    miss(g);
+    g.recordItemBoundary();
+    miss(g);
+    g.recordItemBoundary();
+    expect(g.independence()).toBe(4);
+
+    miss(g);
+    g.recordItemBoundary();
+    expect(g.independence()).toBe(3);
+  });
+
+  // ─── consecutiveness ───
+
+  // GUARD — passes today. The misses must be adjacent: a pass between them
+  // resets the run, so the band holds.
+  it("016 F1 GUARD: miss, pass, miss does NOT drop the band — the misses must be consecutive", () => {
+    const g = at(5);
+
+    miss(g);
+    pass(g);
+    miss(g);
+    g.recordItemBoundary();
+
+    expect(g.independence()).toBe(5);
+  });
+
+  // The superseded MVP rule, stated as its own case: under ≥3-in-5 this drops,
+  // under D9 it must not — the last item is a pass, so there is no live run.
+  it("016 F1: the ≥3-misses-in-5 rule is GONE — three misses followed by a pass does not drop the band", () => {
+    const g = at(5);
+
+    miss(g);
+    miss(g);
+    miss(g);
+    pass(g);
+    g.recordItemBoundary();
+
+    expect(g.independence()).toBe(5);
+  });
+
+  // ─── the floor ───
+  it("016 F1: the band floors at 1 and never goes below, however many misses accumulate", () => {
+    const g = at(2);
+
+    miss(g);
+    miss(g);
+    g.recordItemBoundary();
+    expect(g.independence()).toBe(1);
+
+    for (let i = 0; i < 20; i++) {
+      miss(g);
+      g.recordItemBoundary();
+      expect(g.independence()).toBe(1);
+    }
+  });
+
+  // ─── band-up is untouched ───
+
+  // GUARD — passes today. Up stays slow: a 3-pass streak, one band at a time.
+  it("016 F1 GUARD: band-up still requires a 3-pass streak", () => {
+    const g = at(5);
+
+    pass(g);
+    g.recordItemBoundary();
+    expect(g.independence()).toBe(5);
+
+    pass(g);
+    g.recordItemBoundary();
+    expect(g.independence()).toBe(5);
+
+    pass(g);
+    g.recordItemBoundary();
+    expect(g.independence()).toBe(6);
+  });
+
+  // GUARD — passes today.
+  it("016 F1 GUARD: band-up is still capped at 10", () => {
+    const g = at(9);
+
+    for (let i = 0; i < 30; i++) {
+      pass(g);
+      g.recordItemBoundary();
+      expect(g.independence()).toBeLessThanOrEqual(10);
+    }
+
+    expect(g.independence()).toBe(10);
+  });
+
+  // ─── PRD §7's stranding scenario, on the real demo graph ───
+  it("016 F1 STRANDING: from band 7, two consecutive misses land the kid at 6", () => {
+    // Third arg `[]`: demo-state's nodes carry a pre-baked attempt log, and the
+    // legacy fallback would rebuild an item history out of it. Start this kid's
+    // item history empty so the two misses below are the only items in play.
+    const g = new SkillGraph(demoState.nodes as any, 7, []);
+
+    g.update(["g_sh"], 0);
+    g.recordItemBoundary();
+    g.update(["g_sh"], 0);
+    g.recordItemBoundary();
+
+    expect(g.independence()).toBe(6);
+  });
+
+  it("016 F1: recovery works — after a drop, three passes climb back", () => {
+    const g = at(5);
+
+    miss(g);
+    miss(g);
+    g.recordItemBoundary();
+    expect(g.independence()).toBe(4);
+
+    for (let i = 0; i < 3; i++) {
+      pass(g);
+      g.recordItemBoundary();
+    }
+
+    expect(g.independence()).toBe(5);
   });
 });
