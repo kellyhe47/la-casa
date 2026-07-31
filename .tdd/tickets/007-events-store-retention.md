@@ -1,11 +1,11 @@
 ---
 id: 007
 title: "C1/C4 — events table schema, store methods, boot retention sweep"
-status: pending
+status: green
 depends_on: [001]
 touches: [server/store.js, server/store.test.js, server/schema.sql, server/events.js, server/index.js]
-iterations: 0
-test_files: []
+iterations: 1
+test_files: [server/events.test.js]
 branch: ""
 ---
 

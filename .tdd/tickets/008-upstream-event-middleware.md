@@ -1,11 +1,11 @@
 ---
 id: 008
 title: "C2 — record an upstream event for every proxy call, success included"
-status: pending
+status: green
 depends_on: [002, 004, 007]
 touches: [server/app.js, server/upstream.js, server/routes/generate.js, server/routes/image.js, server/routes/tts.js]
-iterations: 0
-test_files: []
+iterations: 1
+test_files: [server/upstreamEvents.test.js]
 branch: ""
 ---
 

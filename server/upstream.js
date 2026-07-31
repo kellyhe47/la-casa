@@ -15,6 +15,7 @@ import {
   recordProviderFailure,
   recordProviderSuccess,
 } from './providerHealth.js'
+import { recordUpstreamEvent } from './telemetry.js'
 
 /** Hard cap on how much upstream body text reaches the log. */
 export const MAX_LOGGED_BODY = 500
@@ -67,8 +68,12 @@ export function noteUpstreamFailure({ provider, status, durationMs = 0, body }) 
  *
  * On the failure path the response body has already been consumed for the log,
  * so the caller must not touch it. On the success path the body is untouched.
+ *
+ * PRD §4 C2: this is also where the one-and-only `upstream` telemetry row is
+ * written — success and failure alike — so no route handler has to remember to
+ * log. Recording is fire-and-forget and can never fail the request.
  */
-export async function callUpstream({ provider, url, init }) {
+export async function callUpstream({ provider, url, init, cacheHit = false }) {
   const startedAt = Date.now()
 
   let response
@@ -76,13 +81,21 @@ export async function callUpstream({ provider, url, init }) {
     response = await fetch(url, init)
   } catch (e) {
     const durationMs = Date.now() - startedAt
+    const message = e?.message ?? String(e)
     logUpstreamFailure({
       provider,
       status: 0,
       durationMs,
-      body: e?.message ?? String(e),
+      body: message,
     })
     recordProviderFailure(provider)
+    recordUpstreamEvent({
+      provider,
+      status: 504,
+      durationMs,
+      cacheHit,
+      error: message || 'upstream_unreachable',
+    })
     return {
       ok: false,
       durationMs,
@@ -97,6 +110,15 @@ export async function callUpstream({ provider, url, init }) {
     const body = await response.text().catch(() => '')
     logUpstreamFailure({ provider, status: response.status, durationMs, body })
     recordProviderFailure(provider)
+    recordUpstreamEvent({
+      provider,
+      // The *upstream* status, not the 502 we hand the client — otherwise every
+      // failure looks identical and "ElevenLabs is 401ing" is invisible.
+      status: response.status,
+      durationMs,
+      cacheHit,
+      error: String(body ?? '').slice(0, MAX_LOGGED_BODY) || `upstream_${response.status}`,
+    })
     return {
       ok: false,
       durationMs,
@@ -108,5 +130,8 @@ export async function callUpstream({ provider, url, init }) {
   }
 
   recordProviderSuccess(provider)
+  // Successes matter most: without them there is no success *rate* and no
+  // latency percentile (PRD §4 C2).
+  recordUpstreamEvent({ provider, status: response.status, durationMs, cacheHit })
   return { ok: true, response, durationMs }
 }

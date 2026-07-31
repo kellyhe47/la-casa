@@ -1,11 +1,11 @@
 ---
 id: 009
 title: "C3 — POST /events accepts client-side batches"
-status: pending
+status: green
 depends_on: [007]
 touches: [server/app.js, server/routes/events.js]
-iterations: 0
-test_files: []
+iterations: 1
+test_files: [server/eventsRoute.test.js]
 branch: ""
 ---
 
