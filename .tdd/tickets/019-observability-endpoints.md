@@ -1,11 +1,11 @@
 ---
 id: 019
 title: "H1/H2/H4 — /observability route, /debug/metrics aggregation, /debug/logs"
-status: pending
+status: green
 depends_on: [008, 010]
 touches: [server/app.js, server/routes/observability.js, server/metrics.js, server/store.js]
-iterations: 0
-test_files: []
+iterations: 2
+test_files: [server/observability.test.js]
 branch: ""
 ---
 
@@ -61,3 +61,10 @@ Logs table:
 _(test-writer fills in)_
 
 ## Attempt log
+
+- iter 1: built the gate, metrics aggregation and logs table; 195/195 green.
+  Live probe found `learning.passes` stuck at 0 — the test fixture seeded
+  `result:'pass'` (string) while the client emits numeric `0|1`. Wrong-test fix
+  routed through the test-writer, NOT charged to the implementer.
+- iter 2: `metrics.js` counts `Number(result) === 1`, keeping `0` rows in the
+  denominator. 196/196; live re-probe returns pass_rate 0.75 on 3-of-4.

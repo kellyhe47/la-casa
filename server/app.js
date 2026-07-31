@@ -13,6 +13,7 @@ import { ttsHandler } from './routes/tts.js'
 import { imageHandler } from './routes/image.js'
 import { eventsHandler } from './routes/events.js'
 import { getStateHandler, putStateHandler } from './routes/state.js'
+import { registerObservabilityRoutes } from './routes/observability.js'
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url))
 const clientDist = path.resolve(__dirname, '../client/dist')
@@ -75,6 +76,10 @@ export function createApp({ store } = {}) {
   // learner is answered 200 index.html instead of 404.
   app.get('/state/:id', getStateHandler(resolveStore))
   app.put('/state/:id', putStateHandler(resolveStore))
+
+  // PRD §9 (H1) — /observability and /debug/* behind the shared-secret gate.
+  // Registered here, ABOVE the catch-all: below it they silently serve the game.
+  registerObservabilityRoutes(app, resolveStore)
 
   // Production: serve the built client (SPA) when it exists.
   // Keep this LAST — PRD §9 registers /observability and /debug/* above it.
