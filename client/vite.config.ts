@@ -13,11 +13,18 @@ export default defineConfig({
     fs: {
       allow: [gauntletRoot],
     },
+    // Every path the client fetches must be listed here, or vite's SPA fallback
+    // answers with index.html and the fire-and-forget handlers swallow it —
+    // persistence and telemetry then fail silently in dev only.
     proxy: {
       '/generate': 'http://localhost:3001',
       '/tts': 'http://localhost:3001',
       '/image': 'http://localhost:3001',
       '/health': 'http://localhost:3001',
+      '/events': 'http://localhost:3001',        // C3 telemetry batches
+      '/state': 'http://localhost:3001',         // E3 learner state GET/PUT
+      '/debug': 'http://localhost:3001',         // H2/H4 metrics + logs
+      '/observability': 'http://localhost:3001', // H1 dashboard
     }
   },
   test: {
