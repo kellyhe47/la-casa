@@ -566,3 +566,135 @@ describe('H4: GET /debug/logs renders the last rows as an HTML table', () => {
     expect(flagged).not.toContain(ok2.id)
   })
 })
+
+// ===========================================================================
+// H3 — the three Chart.js charts (ticket 020)
+// ===========================================================================
+//
+// SCOPE. The rendering itself is MANUAL-VERIFY: there is no browser in this
+// suite and no jsdom, so nothing below asserts a pixel, an axis, a colour or a
+// Chart.js instance. What is asserted is the WIRING of the served document —
+// the parts a broken implementation would get wrong silently. The aggregation
+// these charts read is already pinned by H2 above and is NOT re-tested here.
+//
+// ---------------------------------------------------------------------------
+// CONTRACT THE IMPLEMENTER MUST MATCH (ticket 020)
+// ---------------------------------------------------------------------------
+//
+// * CHART.JS COMES FROM A CDN (PRD §9.3). The document must carry a
+//   `<script src="…">` whose URL is absolute `https://` and contains "chart"
+//   (e.g. https://cdn.jsdelivr.net/npm/chart.js@4). Any CDN host is accepted;
+//   a bare relative/bundled path is not.
+//
+// * THREE CANVAS TARGETS, ids pinned EXACTLY:
+//       <canvas id="chart-upstream">   chart 1 — upstream health
+//       <canvas id="chart-cache">      chart 2 — cache hit rate
+//       <canvas id="chart-learning">   chart 3 — learning signal (the protected one)
+//   Exactly three `<canvas>` elements, all with distinct ids.
+//
+// * AN INLINE `<script>` (a `<script>` with NO `src` attribute) drives them. It
+//   must `fetch(` the metrics endpoint, name `series`, and name all three canvas
+//   ids. "The page requests each of the three metrics series" is observable in
+//   static HTML only as: the inline script names `series` and each of the three
+//   targets it draws into.
+//
+// * THE KEY MUST PROPAGATE. The page is fetched as `/observability?key=…`; its
+//   inline fetch of `/debug/metrics` must carry that same key or the dashboard
+//   silently renders three empty charts against a 401. Either implementation is
+//   accepted:
+//     (a) the script inlines the URL, i.e. it contains both `/debug/metrics`
+//         and `key=<the presented key>`; or
+//     (b) the script reads the existing `data-metrics-url` off
+//         `#observability-dashboard` (script text mentions `data-metrics-url`
+//         or `metricsUrl`).
+//   Whichever is chosen must still hold after the secret rotates — the key in
+//   the URL is the one PRESENTED ON THIS REQUEST, never a hard-coded constant.
+//
+// * EMPTY STATE — a visible message, not a blank panel. Three elements, one per
+//   chart, carrying class `chart-empty` and ids `empty-upstream`, `empty-cache`,
+//   `empty-learning`, each with non-empty text, and the literal string
+//   `No data yet` present in the document. The inline script must reference the
+//   empty-state hook (`chart-empty` or `empty-upstream`) so the message is
+//   actually toggled off once a series arrives.
+//
+// MANUAL-VERIFY, deliberately NOT automated here:
+//   - chart 1 draws p95 latency lines per provider with failures marked red
+//   - chart 2 draws hits vs misses per provider
+//   - chart 3 draws pass rate and independence band over the session timeline
+// ---------------------------------------------------------------------------
+
+const CANVAS_IDS = ['chart-upstream', 'chart-cache', 'chart-learning']
+const EMPTY_IDS = ['empty-upstream', 'empty-cache', 'empty-learning']
+
+const dashboard = (key = SECRET) => get(`/observability?key=${key}`)
+
+// Every inline <script> body (i.e. those WITHOUT a src attribute), concatenated.
+const inlineScript = (html) =>
+  [...html.matchAll(/<script(?![^>]*\bsrc=)[^>]*>([\s\S]*?)<\/script>/gi)]
+    .map((m) => m[1])
+    .join('\n')
+
+const scriptSrcs = (html) =>
+  [...html.matchAll(/<script[^>]*\bsrc="([^"]+)"/gi)].map((m) => m[1])
+
+describe('H3: the dashboard loads Chart.js and exposes three chart targets', () => {
+  it('references Chart.js from a CDN <script src>', async () => {
+    const srcs = scriptSrcs((await dashboard()).text)
+
+    expect(srcs.some((src) => /^https:\/\//.test(src) && /chart/i.test(src))).toBe(true)
+  })
+
+  it('contains three distinct canvas targets, one per chart', async () => {
+    const html = (await dashboard()).text
+    const ids = [...html.matchAll(/<canvas[^>]*\bid="([^"]+)"/gi)].map((m) => m[1])
+
+    expect(ids).toHaveLength(3)
+    expect(new Set(ids).size).toBe(3)
+    for (const id of CANVAS_IDS) expect(ids).toContain(id)
+  })
+})
+
+describe('H3: the dashboard requests the three metrics series', () => {
+  it('fetches the series and draws each one into its own canvas', async () => {
+    const js = inlineScript((await dashboard()).text)
+
+    expect(js).toMatch(/fetch\s*\(/)
+    expect(js).toMatch(/\bseries\b/)
+    for (const id of CANVAS_IDS) expect(js).toContain(id)
+  })
+
+  // The real failure mode: the page itself is gated, so a fetch that drops the
+  // key answers 401 and every chart renders empty with no visible error.
+  it('propagates the presented key into the client-side metrics fetch', async () => {
+    const carriesKey = (html, key) => {
+      const js = inlineScript(html)
+      const inlined = js.includes('/debug/metrics') && js.includes(`key=${key}`)
+      const fromDataset = /data-metrics-url|metricsUrl/.test(js)
+      return inlined || fromDataset
+    }
+
+    expect(carriesKey((await dashboard()).text, SECRET)).toBe(true)
+
+    // …and it must be the key presented on THIS request, not a baked-in constant.
+    process.env[KEY_VAR] = 'rotated-secret'
+    const rotated = (await dashboard('rotated-secret')).text
+    expect(carriesKey(rotated, 'rotated-secret')).toBe(true)
+    expect(inlineScript(rotated)).not.toContain(SECRET)
+  })
+})
+
+describe('H3: the dashboard degrades to a message, not a blank screen', () => {
+  it('ships a visible empty-state message per chart that the script can toggle', async () => {
+    const html = (await dashboard()).text
+    const empties = [
+      ...html.matchAll(/<[a-z]+[^>]*\bclass="[^"]*\bchart-empty\b[^"]*"[^>]*>([^<]*)</gi),
+    ]
+
+    expect(empties).toHaveLength(3)
+    for (const m of empties) expect(m[1].trim().length).toBeGreaterThan(0)
+    expect(html).toContain('No data yet')
+    for (const id of EMPTY_IDS) expect(html).toContain(`id="${id}"`)
+    // The message is only a degradation if something can turn it off again.
+    expect(inlineScript(html)).toMatch(/chart-empty|empty-upstream/)
+  })
+})
