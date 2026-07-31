@@ -134,8 +134,6 @@ export function BedroomScreen({ graph, seed, onAdvance, independence, sessionPas
         await advancePage();
         setBabyMood("listening");
         setStatusText("");
-        // Prefetch next
-        contentPipeline.prefetchNext({ beat: "bedroom", frontierTarget: graph.frontier()[0]?.id || "g_ee", independenceBand: independence, seed });
       } else {
         // Miss (R4.3.1: fiction absorption — baby confusion)
         const newMissCount = missCount + 1;
@@ -197,7 +195,7 @@ export function BedroomScreen({ graph, seed, onAdvance, independence, sessionPas
     recRef.current = rec;
     setLoopState("listening");
     setBabyMood("listening");
-  }, [currentSentence, missCount, graph, playAudio, pageIndex, sentences, independence, seed, advancePage]);
+  }, [currentSentence, missCount, graph, playAudio, pageIndex, sentences, advancePage]);
 
   const handleMicClick = useCallback(() => {
     if (loopState === "reading" || loopState === "arrival") {

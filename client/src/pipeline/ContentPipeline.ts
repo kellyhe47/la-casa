@@ -13,9 +13,11 @@ export interface AudioCacheKey {
   lang: string;
 }
 
+/** Image prompts are purely word-derived (the server ignores any seed), so the
+ *  key is the word alone — a per-session seed would only force identical
+ *  regenerations and defeat the server-side cache. */
 export interface ImageCacheKey {
   word: string;
-  seed: string;
 }
 
 export interface BeatContent {
@@ -24,7 +26,9 @@ export interface BeatContent {
 }
 
 function textKey(k: TextCacheKey): string {
-  return `text:${k.beat}:${k.frontierTarget}:${k.independenceBand}:${k.seed}`;
+  // prompt is part of the key — two beats can share beat/target/band/seed and
+  // still ask for completely different content
+  return `text:${k.beat}:${k.frontierTarget}:${k.independenceBand}:${k.seed}:${k.prompt ?? ""}`;
 }
 
 function audioKey(k: AudioCacheKey): string {
@@ -32,7 +36,7 @@ function audioKey(k: AudioCacheKey): string {
 }
 
 function imageKey(k: ImageCacheKey): string {
-  return `image:${k.word}:${k.seed}`;
+  return `image:${k.word}`;
 }
 
 const MAX_RETRIES = 2;
@@ -106,7 +110,7 @@ export class ContentPipeline {
       const res = await fetchWithRetry("/image", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ word: key.word, seed: key.seed }),
+        body: JSON.stringify({ word: key.word }),
       });
       if (!res.ok) {
         throw new Error(`image failed: ${res.status}`);
@@ -114,12 +118,6 @@ export class ContentPipeline {
       const data = await res.json();
       return data.url as string;
     });
-  }
-
-  /** Fire-and-forget prefetch for next beat (AC4) */
-  async prefetchNext(key: TextCacheKey): Promise<void> {
-    // Run generate in background; errors are swallowed — the living-scene wait handles late content
-    this.generate(key).catch(() => {});
   }
 
   /** Parse LLM output tolerantly — strips markdown fences, slices first { to last } (AC8) */

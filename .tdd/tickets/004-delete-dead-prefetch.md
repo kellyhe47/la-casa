@@ -1,11 +1,11 @@
 ---
 id: 004
 title: "B1 — delete the three dead prefetchNext calls and the method"
-status: pending
+status: green
 depends_on: []
 touches: [client/src/pipeline/ContentPipeline.ts, client/src/pipeline/ContentPipeline.test.ts, client/src/screens/LivingRoomScreen.tsx, client/src/screens/FridgeScreen.tsx, client/src/screens/BedroomScreen.tsx]
-iterations: 0
-test_files: []
+iterations: 1
+test_files: [client/src/pipeline/ContentPipeline.test.ts, client/src/screens/LivingRoomScreen.test.tsx, client/src/screens/BedroomScreen.test.tsx]
 branch: ""
 ---
 

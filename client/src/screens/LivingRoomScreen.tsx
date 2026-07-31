@@ -34,6 +34,8 @@ type LoopState =
 
 interface LivingRoomScreenProps {
   graph: SkillGraph;
+  /** Session seed + independence band — part of every screen's props contract
+   *  (App passes them to all rooms); this room's content is graph-derived. */
   seed: string;
   onAdvance: () => void;
   independence: number;
@@ -89,7 +91,7 @@ async function speakAbuela(text: string, handle: SpeakHandle, onFetchSettled?: (
   }
 }
 
-export function LivingRoomScreen({ graph, seed, onAdvance, independence }: LivingRoomScreenProps) {
+export function LivingRoomScreen({ graph, onAdvance }: LivingRoomScreenProps) {
   const [loopState, setLoopState] = useState<LoopState>("arrival");
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [currentWord, setCurrentWord] = useState(() => getFirstFrontierWord(graph));
@@ -140,13 +142,13 @@ export function LivingRoomScreen({ graph, seed, onAdvance, independence }: Livin
   const fetchImageWithTyping = useCallback(async (word: string): Promise<string | undefined> => {
     beginLoad();
     try {
-      return await contentPipeline.fetchImage({ word, seed });
+      return await contentPipeline.fetchImage({ word });
     } catch {
       return undefined; // stub — illustration fallback in ChatThread
     } finally {
       endLoad();
     }
-  }, [beginLoad, endLoad, seed]);
+  }, [beginLoad, endLoad]);
 
   const startListening = useCallback(() => {
     const SR = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
@@ -201,12 +203,6 @@ export function LivingRoomScreen({ graph, seed, onAdvance, independence }: Livin
           text: VOICE_NOTE_TEXT,
         });
         await playVoiceNote(VOICE_NOTE_TEXT);
-        contentPipeline.prefetchNext({
-          beat: "abuela",
-          frontierTarget: graph.frontier()[0]?.id || "g_sh",
-          independenceBand: independence,
-          seed,
-        });
       } else {
         const newMissCount = missCount + 1;
         setMissCount(newMissCount);
@@ -273,7 +269,7 @@ export function LivingRoomScreen({ graph, seed, onAdvance, independence }: Livin
     recRef.current = rec;
     setMicActive(true);
     setLoopState("listening");
-  }, [currentWord, missCount, graph, addMessage, playVoiceNote, fetchImageWithTyping, independence, seed, nextFrontierWord]);
+  }, [currentWord, missCount, graph, addMessage, playVoiceNote, fetchImageWithTyping, nextFrontierWord]);
 
   // First exchange on mount: photo + voice note + autoplay.
   // Waits out the panel entrance — the room is seen alone for ~two beats,

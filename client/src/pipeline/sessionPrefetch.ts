@@ -48,10 +48,13 @@ export function getFirstFrontierWord(graph: SkillGraph): string {
  * app loads. The title screen + mic gate + house transition then cover the
  * generation latency (R8.4.1). Fire-and-forget: failures fall back to the
  * living-scene wait like any other late content.
+ *
+ * `seed` identifies the session for the text beats warmed alongside this; the
+ * image key is deliberately seedless so the warmed entry is reusable.
  */
-export function prefetchSessionStart(graph: SkillGraph, seed: string): void {
+export function prefetchSessionStart(graph: SkillGraph, _seed: string): void {
   const word = getFirstFrontierWord(graph);
-  contentPipeline.fetchImage({ word, seed }).catch(() => {});
+  contentPipeline.fetchImage({ word }).catch(() => {});
   contentPipeline
     .fetchTTS({ text: VOICE_NOTE_TEXT, voiceId: ABUELA_VOICE_ID, lang: ABUELA_LANG })
     .catch(() => {});

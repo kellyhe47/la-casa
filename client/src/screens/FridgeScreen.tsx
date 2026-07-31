@@ -25,6 +25,8 @@ function getTargetWord(graph: SkillGraph, sessionMissedWords: string[], exclude:
 
 interface FridgeScreenProps {
   graph: SkillGraph;
+  /** Session seed + independence band — part of every screen's props contract
+   *  (App passes them to all rooms); this room's content is graph-derived. */
   seed: string;
   onAdvance: () => void;
   independence: number;
@@ -40,7 +42,7 @@ interface StickyNote {
 
 const NOTE_COLORS = ["#E8917A", "#F2C066", "#9DBBA4", "#B39ECF"];
 
-export function FridgeScreen({ graph, seed, onAdvance, independence, sessionMissedWords, sessionPassedWords = [] }: FridgeScreenProps) {
+export function FridgeScreen({ graph, onAdvance, sessionMissedWords, sessionPassedWords = [] }: FridgeScreenProps) {
   // Words already served this visit — never ask for the same word twice
   const usedWordsRef = useRef<Set<string>>(new Set());
   const pickWord = useCallback(() => {
@@ -131,9 +133,8 @@ export function FridgeScreen({ graph, seed, onAdvance, independence, sessionMiss
       setCurrentWord(nextWord);
       setTrayKey((k) => k + 1);
       setLoopState("prompt");
-      contentPipeline.prefetchNext({ beat: "fridge", frontierTarget: graph.frontier()[0]?.id || "g_sh", independenceBand: independence, seed });
     }, 2000);
-  }, [currentWord, graph, playAudio, independence, seed, pickWord]);
+  }, [currentWord, graph, playAudio, pickWord]);
 
   const handleExit = useCallback(async () => {
     if (!itemCompleted) return;

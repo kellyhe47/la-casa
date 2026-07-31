@@ -1,11 +1,11 @@
 ---
 id: 005
 title: "B2/B3 — drop seed from image key, add prompt to text key"
-status: pending
+status: green
 depends_on: [004]
 touches: [client/src/pipeline/ContentPipeline.ts, client/src/pipeline/ContentPipeline.test.ts, client/src/pipeline/sessionPrefetch.ts, client/src/screens/LivingRoomScreen.tsx, client/src/screens/FridgeScreen.tsx]
-iterations: 0
-test_files: []
+iterations: 1
+test_files: [client/src/pipeline/ContentPipeline.test.ts, client/src/pipeline/sessionPrefetch.test.ts]
 branch: ""
 ---
 
