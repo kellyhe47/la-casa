@@ -1,0 +1,4 @@
+{
+  "_comment": "SKELETON ONLY — created by the 018/G test-writer so the tests can import this module. The implementer authors the real Mom and Dad variants here (three per key: spanish-first / bilingual / english-only). Abuela and the baby are OUT OF SCOPE (PRD-v2 §8.3) — no abuela.* or baby.* keys belong in this file.",
+  "lines": {}
+}

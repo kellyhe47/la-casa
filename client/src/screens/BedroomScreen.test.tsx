@@ -1,6 +1,18 @@
-import { describe, it, expect, vi, beforeEach } from "vitest";
-import { render, screen, fireEvent, act } from "@testing-library/react";
+import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
+import { render, screen, fireEvent, act, cleanup } from "@testing-library/react";
 import React from "react";
+import { readFileSync, existsSync } from "node:fs";
+import { resolve } from "node:path";
+
+/** Read a screen's source. `import.meta.url` is an http URL under vite's
+ *  transform, so resolve from the vitest cwd instead. */
+function readScreenSource(file: string): string {
+  for (const base of [process.cwd(), resolve(process.cwd(), "client")]) {
+    const p = resolve(base, "src/screens", file);
+    if (existsSync(p)) return readFileSync(p, "utf8");
+  }
+  throw new Error(`could not locate src/screens/${file} from ${process.cwd()}`);
+}
 // prefetchNextSentence (the LIVE prefetch — not the dead prefetchNext) runs on
 // mount; mock the generator so we can observe it without hitting the network.
 vi.mock("../pipeline/sentenceGen", () => ({
@@ -12,6 +24,7 @@ import { BedroomScreen } from "./BedroomScreen";
 import { generateBedtimeSentence } from "../pipeline/sentenceGen";
 import { SkillGraph } from "../graph/SkillGraph";
 import { contentPipeline } from "../pipeline/ContentPipeline";
+import { getLine } from "../pipeline/lines";
 import { voices } from "../../../content/voices.json";
 import demoState from "../../../content/demo-state.json";
 import type { GraphNode } from "../graph/types";
@@ -261,5 +274,110 @@ describe("BedroomScreen — miss and grace record honestly (016/F3, 017/F2)", ()
     } finally {
       tts.mockRestore();
     }
+  });
+});
+
+/* ------------------------------------------------------------------ *
+ * TICKET 018 — G2/G3: Mamá's arrival line is band-tiered; Abuela and the
+ * baby are not.
+ *
+ * The bedroom currently encodes "the world turns English as the band rises"
+ * as a single stray ternary — `independence >= 7 ? <english> : <spanish>` —
+ * which is a 2-tier split bolted onto a 3-tier spec (D8). It becomes
+ * `getLine("mom.bedroom.arrival", independence)`.
+ *
+ * PROSE IS NOT ASSERTED: the contract is that Mamá's first spoken string IS
+ * the `getLine` variant for the screen's band.
+ *
+ * G3 HARD BOUNDARY (PRD-v2 §8.3): the baby's pre-baked babble arrays stay
+ * exactly as they are and are never routed through getLine.
+ * ------------------------------------------------------------------ */
+describe("BedroomScreen — Mamá's arrival line comes from getLine (018/G2)", () => {
+  const MOM_VOICE_ID = (voices as any)["voice.mama"].elevenLabsVoiceID;
+  const ARRIVAL_KEY = "mom.bedroom.arrival";
+
+  const cleanGraph = () => new SkillGraph(demoState.nodes as unknown as GraphNode[], 5, []);
+
+  let tts: ReturnType<typeof vi.spyOn>;
+
+  beforeEach(() => {
+    // jsdom never fires `ended` and playAudio awaits it — reject instead so the
+    // arrival exchange runs to completion. The call args are still recorded.
+    tts = vi.spyOn(contentPipeline, "fetchTTS").mockRejectedValue(new Error("no tts in jsdom"));
+  });
+
+  afterEach(() => {
+    tts.mockRestore();
+  });
+
+  const momSaid = () =>
+    tts.mock.calls
+      .map(([args]: any[]) => args)
+      .filter((a: any) => a.voiceId === MOM_VOICE_ID)
+      .map((a: any) => String(a.text));
+
+  function mountAt(band: number) {
+    render(
+      <BedroomScreen
+        graph={cleanGraph()}
+        seed="test"
+        onAdvance={() => {}}
+        independence={band}
+        sessionPassedWords={["milk", "beans"]}
+      />
+    );
+  }
+
+  it("018 G2: the arrival line IS the getLine variant for the band (spanish-first, band 3)", () => {
+    mountAt(3);
+    expect(momSaid()[0]).toBe(getLine(ARRIVAL_KEY, 3));
+  });
+
+  it("018 G2: the arrival line IS the getLine variant for the band (bilingual, band 5)", () => {
+    mountAt(5);
+    expect(momSaid()[0]).toBe(getLine(ARRIVAL_KEY, 5));
+  });
+
+  it("018 G2: the arrival line IS the getLine variant for the band (english-only, band 8)", () => {
+    mountAt(8);
+    expect(momSaid()[0]).toBe(getLine(ARRIVAL_KEY, 8));
+  });
+
+  it("018 G2: all THREE tiers are audible — bands 4, 5 and 8 give three different arrivals", () => {
+    // Today's `independence >= 7` ternary is a 2-tier split: bands 4 and 5 are
+    // the SAME string, so the middle (bilingual) tier does not exist yet.
+    const heard = [4, 5, 8].map((band) => {
+      cleanup();
+      tts.mockClear();
+      mountAt(band);
+      return momSaid()[0];
+    });
+
+    heard.forEach((line, i) => expect(line, `band ${[4, 5, 8][i]}`).toBeTruthy());
+    expect(new Set(heard).size).toBe(3);
+  });
+
+  it("018 G2 STRUCTURAL: the `independence >= 7` ternary is gone from BedroomScreen.tsx", () => {
+    const source = readScreenSource("BedroomScreen.tsx");
+    expect(source).not.toMatch(/independence\s*>=\s*7/);
+    expect(source).toMatch(/getLine/);
+  });
+});
+
+describe("BedroomScreen — G3 boundary: the baby is not band-tiered (018/G3)", () => {
+  // GUARD — passes today and must keep passing. The baby's babble is pre-baked
+  // (R4.3.0) and Abuela speaks Spanish always, by design. Neither goes through
+  // getLine, and their strings are untouched by this ticket.
+  it("018 G3 GUARD: BABY_GIGGLES / BABY_CONFUSED still live in the screen, unchanged", () => {
+    const source = readScreenSource("BedroomScreen.tsx");
+    expect(source).toMatch(/const BABY_GIGGLES = \["hehe\.\.\.", "ba ba!", "goo!", "yay!"\]/);
+    expect(source).toMatch(/const BABY_CONFUSED = \["\.\.\.\?", "ba\?", "huh\?"\]/);
+    // and they are read straight from those arrays, never resolved by band
+    expect(source).not.toMatch(/getLine\([^)]*bab/i);
+  });
+
+  it("018 G3 GUARD: the living room (Abuela) never imports getLine", () => {
+    const source = readScreenSource("LivingRoomScreen.tsx");
+    expect(source).not.toMatch(/getLine/);
   });
 });

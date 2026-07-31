@@ -1,10 +1,24 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
-import { render, screen, fireEvent, act } from "@testing-library/react";
+import { render, screen, fireEvent, act, cleanup } from "@testing-library/react";
 import React from "react";
+import { readFileSync, existsSync } from "node:fs";
+import { resolve } from "node:path";
+
+/** Read a screen's source. `import.meta.url` is an http URL under vite's
+ *  transform, so resolve from the vitest cwd instead. */
+function readScreenSource(file: string): string {
+  for (const base of [process.cwd(), resolve(process.cwd(), "client")]) {
+    const p = resolve(base, "src/screens", file);
+    if (existsSync(p)) return readFileSync(p, "utf8");
+  }
+  throw new Error(`could not locate src/screens/${file} from ${process.cwd()}`);
+}
 import { FridgeScreen } from "./FridgeScreen";
 import { SkillGraph } from "../graph/SkillGraph";
 import { contentPipeline } from "../pipeline/ContentPipeline";
+import { getLine } from "../pipeline/lines";
 import demoState from "../../../content/demo-state.json";
+import { voices } from "../../../content/voices.json";
 import type { GraphNode } from "../graph/types";
 
 function makeGraph() {
@@ -261,5 +275,111 @@ describe("FridgeScreen — wrong letters cost a band, once per scene (017/F4)", 
     }
     expect(screen.queryByTestId("exit-button")).toBeNull(); // the item is not "done"
     expect(document.body.textContent).not.toContain("fish"); // no sticky note appeared
+  });
+});
+
+/* ------------------------------------------------------------------ *
+ * TICKET 018 — G2: Dad's fridge prompts come from `getLine(key, band)`
+ *
+ * Today FridgeScreen hardcodes TWO `dadPrompts` records (the mount prompt
+ * effect ~line 87 and `handleReplayPrompt` ~line 146) and never reads its own
+ * `independence` prop — it is not even destructured. The band-tiered table in
+ * `content/lines.json` replaces both.
+ *
+ * PROSE IS NOT ASSERTED. The contract is "the spoken string IS the getLine
+ * variant for this screen's band" — an equality against `getLine` itself, which
+ * survives every future edit to the authored Spanish/English wording.
+ *
+ * Dad's prompt is still SPOKEN ONLY, no caption (MVP R4.4.1) — the AC1 test
+ * above still guards that and is untouched.
+ * ------------------------------------------------------------------ */
+describe("FridgeScreen — Dad's prompts come from getLine (018/G2)", () => {
+  const DAD_VOICE_ID = (voices as any)["voice.papa"].elevenLabsVoiceID;
+
+  /** sessionMissedWords is served last-first → the scene opens on "fish". */
+  const MISSED = ["milk", "fish"];
+  const FIRST_WORD = "fish";
+  const PROMPT_KEY = `dad.fridge.prompt.${FIRST_WORD}`;
+
+  const cleanGraph = () => new SkillGraph(demoState.nodes as unknown as GraphNode[], 5, []);
+
+  let tts: ReturnType<typeof vi.spyOn>;
+
+  beforeEach(() => {
+    // A rejected fetch lands in the screen's catch; the call args are still
+    // recorded, which is all these tests read.
+    tts = vi.spyOn(contentPipeline, "fetchTTS").mockRejectedValue(new Error("no tts in jsdom"));
+  });
+
+  afterEach(() => {
+    tts.mockRestore();
+  });
+
+  /** Everything Dad said, in order. */
+  const dadSaid = () =>
+    tts.mock.calls
+      .map(([args]: any[]) => args)
+      .filter((a: any) => a.voiceId === DAD_VOICE_ID)
+      .map((a: any) => String(a.text));
+
+  function mountAt(band: number) {
+    render(
+      <FridgeScreen
+        graph={cleanGraph()}
+        seed="test"
+        onAdvance={() => {}}
+        independence={band}
+        sessionMissedWords={MISSED}
+      />
+    );
+  }
+
+  /** The authored variant, with the one supported placeholder filled in.
+   *  (Only `dad.fridge.prompt.default` is expected to carry `{word}`, but
+   *  allowing it everywhere keeps the assertion authoring-agnostic.) */
+  const expectedLine = (key: string, band: number) =>
+    getLine(key, band).replace(/\{word\}/g, FIRST_WORD);
+
+  it("018 G2: the mount prompt IS the getLine variant for the screen's band (spanish-first)", () => {
+    mountAt(3); // sessions start at band 3 → spanish-first
+    expect(dadSaid()[0]).toBe(expectedLine(PROMPT_KEY, 3));
+  });
+
+  it("018 G2: the mount prompt IS the getLine variant for the screen's band (english-only)", () => {
+    mountAt(9);
+    expect(dadSaid()[0]).toBe(expectedLine(PROMPT_KEY, 9));
+  });
+
+  it("018 G2: all THREE tiers are audible — bands 4, 5 and 8 give three different prompts", () => {
+    // Today the prompt is a single hardcoded string, so all three are equal.
+    // 4 and 5 straddle the spanish-first→bilingual boundary; 8 is english-only.
+    const heard = [4, 5, 8].map((band) => {
+      cleanup();
+      tts.mockClear();
+      mountAt(band);
+      return dadSaid()[0];
+    });
+
+    heard.forEach((line, i) => expect(line, `band ${[4, 5, 8][i]}`).toBeTruthy());
+    expect(new Set(heard).size).toBe(3);
+  });
+
+  it("018 G2 STRUCTURAL: the hardcoded dadPrompts tables are gone from FridgeScreen.tsx", () => {
+    const source = readScreenSource("FridgeScreen.tsx");
+    expect(source).not.toMatch(/dadPrompts/);
+    expect(source).toMatch(/getLine/);
+  });
+
+  // GUARD — passes today and must keep passing: the speaker replay button
+  // (R4.4.2) still speaks in Dad's voice, whatever string it now sources.
+  it("018 G2 GUARD: the speaker replay button still speaks in Dad's voice", () => {
+    mountAt(3);
+    tts.mockClear();
+
+    fireEvent.click(screen.getByRole("button"));
+
+    const said = dadSaid();
+    expect(said.length).toBeGreaterThan(0);
+    expect(said[0].trim().length).toBeGreaterThan(0);
   });
 });
