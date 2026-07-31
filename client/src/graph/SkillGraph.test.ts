@@ -96,3 +96,127 @@ describe("SkillGraph", () => {
     expect(graph.getNode("g_sh")!.mastery).toBeCloseTo(expected, 5);
   });
 });
+
+// ── Ticket 006 / PRD-v2 §6 E5 ────────────────────────────────────────────────
+// The SkillGraph constructor must accept a saved independence band so a reloaded
+// session resumes at the band it was saved at instead of snapping back to 3.
+//
+// IMPLEMENTATION CONTRACT ASSUMED BY THESE TESTS:
+//   new SkillGraph(nodes: GraphNode[], independence?: number)
+// i.e. a SECOND OPTIONAL POSITIONAL argument. One-arg construction must keep
+// working (client/src/state/appStore.ts:42 relies on it) and must still yield 3.
+describe("SkillGraph — saved independence hydration (E5)", () => {
+  /**
+   * Drive a graph's independence band up to `target` by repeated
+   * single-node pass + item boundary cycles.
+   *
+   * recordItemBoundary() moves at most 1 band per call and only on a 3-pass
+   * streak, so this needs several cycles. Passes only, so the band is monotonic
+   * upward and cannot overshoot: we re-check after every boundary.
+   *
+   * Single-node updates on purpose: update() pushes ONE entry to the internal
+   * _allAttempts per call but one entry per node to node.attempts, so a
+   * multi-node update would make the rehydrated attempt list disagree with the
+   * live one for reasons unrelated to this ticket.
+   */
+  function driveToBand(g: SkillGraph, target: number, maxCycles = 200): void {
+    for (let i = 0; i < maxCycles && g.independence() < target; i++) {
+      g.update(["g_sh"], 1);
+      g.recordItemBoundary();
+    }
+  }
+
+  function freshGraph(): SkillGraph {
+    return new SkillGraph(demoState.nodes as any);
+  }
+
+  /** Serialize through real JSON so we test what actually hits storage. */
+  function saveAtBand(target: number) {
+    const g = freshGraph();
+    driveToBand(g, target);
+    // PRECONDITION: if the driver failed, the round-trip test below would be
+    // vacuous (serialize 3, assert 3 — green today, proving nothing).
+    expect(g.independence()).toBe(target);
+    return JSON.parse(JSON.stringify(g.toJSON())) as {
+      nodes: any[];
+      independence: number;
+    };
+  }
+
+  // ─── THE HEADLINE TEST (PRD-v2 §12 risk #1) ───
+  it("E5 ROUND-TRIP: saved at band 7, reloaded graph reports independence 7", () => {
+    const saved = saveAtBand(7);
+    expect(saved.independence).toBe(7); // the band really was written out
+
+    const reloaded = new SkillGraph(saved.nodes as any, saved.independence);
+
+    expect(reloaded.independence()).toBe(7);
+  });
+
+  it("E5: band 1 (floor) round-trips through construction", () => {
+    const g = new SkillGraph(demoState.nodes as any, 1);
+    expect(g.independence()).toBe(1);
+  });
+
+  it("E5: band 10 (ceiling) round-trips through construction", () => {
+    const g = new SkillGraph(demoState.nodes as any, 10);
+    expect(g.independence()).toBe(10);
+  });
+
+  // REGRESSION GUARD — passes today. E8/R5.3: new players start at band 3.
+  it("REGRESSION GUARD: constructing with no independence argument yields 3", () => {
+    const g = new SkillGraph(demoState.nodes as any);
+    expect(g.independence()).toBe(3);
+  });
+
+  it("E5: hydrated nodes and per-node mastery match the serialized source", () => {
+    const saved = saveAtBand(7);
+    const reloaded = new SkillGraph(saved.nodes as any, saved.independence);
+
+    expect(reloaded.nodes.length).toBe(saved.nodes.length);
+    expect(reloaded.nodes.map((n) => n.id)).toEqual(saved.nodes.map((n: any) => n.id));
+    for (const source of saved.nodes) {
+      const hydrated = reloaded.getNode(source.id)!;
+      expect(hydrated).toBeDefined();
+      expect(hydrated.mastery).toBe(source.mastery);
+      expect(hydrated.peakMastery).toBe(source.peakMastery);
+      expect(hydrated.attempts.length).toBe(source.attempts.length);
+    }
+  });
+
+  it("E5: hydrated graph's next recordItemBoundary sees restored attempt history, not an empty one", () => {
+    const saved = saveAtBand(7);
+    // Rebuild at band 5 with the SAME (all-recent-passes) attempt history.
+    const reloaded = new SkillGraph(saved.nodes as any, 5);
+    expect(reloaded.independence()).toBe(5);
+
+    // No update() call — the only attempts available are the rehydrated ones.
+    // With a restored history of recent passes: candidate 10 > 5 and the last 3
+    // are passes, so the band ticks to 6. With an EMPTY _allAttempts,
+    // recordItemBoundary() returns early and the band would stay 5.
+    reloaded.recordItemBoundary();
+    expect(reloaded.independence()).toBe(6);
+  });
+
+  // REGRESSION GUARD — passes today. Proves the _allAttempts rebuild from
+  // node.attempts still happens, independent of the new parameter.
+  it("REGRESSION GUARD: _allAttempts is rebuilt from node.attempts (one-arg construction)", () => {
+    const saved = saveAtBand(7);
+    const reloaded = new SkillGraph(saved.nodes as any);
+    expect(reloaded.independence()).toBe(3);
+
+    reloaded.recordItemBoundary();
+    expect(reloaded.independence()).toBe(4);
+  });
+
+  it("E5: toJSON() still emits both nodes and independence, and a hydrated graph re-emits its saved band", () => {
+    const saved = saveAtBand(7);
+    const reloaded = new SkillGraph(saved.nodes as any, saved.independence);
+
+    const json = reloaded.toJSON();
+    expect(json.nodes).toBeDefined();
+    expect(json.nodes.length).toBe(saved.nodes.length);
+    expect(json.independence).toBe(7);
+    expect(() => JSON.stringify(json)).not.toThrow();
+  });
+});
