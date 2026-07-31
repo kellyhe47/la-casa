@@ -1,5 +1,6 @@
-import { describe, it, expect, beforeEach, vi } from "vitest";
+import { describe, it, expect, beforeEach } from "vitest";
 import { createAppStore, type AppStore } from "./appStore";
+import { LEARNER_ID_KEY } from "./learnerId";
 
 describe("AppStore", () => {
   let store: AppStore;
@@ -80,11 +81,16 @@ describe("AppStore", () => {
     expect(store.getState().screen).toBe("title");
   });
 
-  // AC8: no localStorage/sessionStorage
-  it("AC8: no persistence — localStorage not touched", () => {
-    const setSpy = vi.spyOn(Storage.prototype, "setItem");
+  // AC8 (revised by PRD v2 D2/E2): localStorage holds the anonymous learner
+  // uuid and NOTHING else — no graph mirror, so there is no divergence or
+  // reconciliation logic. State itself lives server-side (E1/E3).
+  it("AC8: no client-side state mirror — only the learner id key is persisted", () => {
+    localStorage.clear();
     store.getState().startSession();
     store.getState().advanceBeat();
-    expect(setSpy).not.toHaveBeenCalled();
+
+    const keys: string[] = [];
+    for (let i = 0; i < localStorage.length; i++) keys.push(localStorage.key(i)!);
+    expect(keys.filter((k) => k !== LEARNER_ID_KEY)).toEqual([]);
   });
 });

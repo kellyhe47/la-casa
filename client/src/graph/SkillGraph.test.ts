@@ -220,3 +220,120 @@ describe("SkillGraph — saved independence hydration (E5)", () => {
     expect(() => JSON.stringify(json)).not.toThrow();
   });
 });
+
+/* ------------------------------------------------------------------ *
+ * TICKET 013 — E6: truncate node attempts to the last 50 on serialize
+ *
+ * `GraphNode.attempts` is append-only and unbounded, but recordItemBoundary
+ * only ever reads the last 20. Truncating to the last 50 per node ON SERIALIZE
+ * keeps the wire payload flat at ~6KB forever. The in-memory graph keeps its
+ * full history for the life of the session.
+ * ------------------------------------------------------------------ */
+
+const MAX_SERIALIZED_ATTEMPTS = 50;
+
+/** `count` attempts with strictly increasing timestamps, mostly passes. */
+function attemptSeq(count: number) {
+  return Array.from({ length: count }, (_, i) => ({
+    timestamp: 1_000 + i,
+    result: (i % 9 === 0 ? 0 : 1) as 0 | 1,
+  }));
+}
+
+function nodeWith(id: string, attemptCount: number) {
+  return {
+    id,
+    type: "grapheme",
+    label: id,
+    prereqs: [],
+    confusion: false,
+    mastery: 0.5,
+    peakMastery: 0.6,
+    lastSeen: 1_000,
+    attempts: attemptSeq(attemptCount),
+  };
+}
+
+describe("SkillGraph — attempts truncation on serialize (E6)", () => {
+  it("E6: a node with 120 attempts serializes with exactly 50", () => {
+    const g = new SkillGraph([nodeWith("n_hot", 120)] as any);
+
+    const json = g.toJSON();
+
+    expect(json.nodes[0].attempts.length).toBe(MAX_SERIALIZED_ATTEMPTS);
+  });
+
+  it("E6: the 50 kept are the MOST RECENT — the newest survives, the oldest does not", () => {
+    const source = attemptSeq(120);
+    const g = new SkillGraph([nodeWith("n_hot", 120)] as any);
+
+    const kept = g.toJSON().nodes[0].attempts;
+    const keptStamps = kept.map((a) => a.timestamp);
+
+    expect(keptStamps).toContain(source[119].timestamp); // newest survives
+    expect(keptStamps).not.toContain(source[0].timestamp); // oldest is dropped
+    expect(keptStamps).not.toContain(source[69].timestamp); // last one outside the window
+    expect(keptStamps).toContain(source[70].timestamp); // first one inside the window
+  });
+
+  it("E6: attempt order is preserved oldest-to-newest within the kept window", () => {
+    const source = attemptSeq(120);
+    const g = new SkillGraph([nodeWith("n_hot", 120)] as any);
+
+    const kept = g.toJSON().nodes[0].attempts;
+
+    expect(kept).toEqual(source.slice(-MAX_SERIALIZED_ATTEMPTS));
+    const stamps = kept.map((a) => a.timestamp);
+    expect(stamps).toEqual([...stamps].sort((a, b) => a - b));
+  });
+
+  // GUARD — passes today. Truncation must be a no-op below the cap.
+  it("E6 GUARD: a node with fewer than 50 attempts is serialized unchanged", () => {
+    const g = new SkillGraph([nodeWith("n_cool", 12)] as any);
+
+    expect(g.toJSON().nodes[0].attempts).toEqual(attemptSeq(12));
+  });
+
+  // GUARD — passes today. Off-by-one: exactly 50 must survive intact.
+  it("E6 GUARD: a node with exactly 50 attempts is serialized unchanged", () => {
+    const g = new SkillGraph([nodeWith("n_edge", 50)] as any);
+
+    expect(g.toJSON().nodes[0].attempts).toEqual(attemptSeq(50));
+  });
+
+  it("E6: truncation does not mutate the live in-memory graph", () => {
+    const g = new SkillGraph([nodeWith("n_hot", 120)] as any);
+
+    const json = g.toJSON();
+
+    // The session keeps its full history...
+    expect(g.getNode("n_hot")!.attempts.length).toBe(120);
+    expect(g.nodes[0].attempts.length).toBe(120);
+    // ...so the serialized array must be a copy, not the live one spliced.
+    expect(json.nodes[0].attempts).not.toBe(g.getNode("n_hot")!.attempts);
+    // A second serialize still yields 50 (not 50-of-50-of-...).
+    expect(g.toJSON().nodes[0].attempts.length).toBe(MAX_SERIALIZED_ATTEMPTS);
+    expect(g.getNode("n_hot")!.attempts.length).toBe(120);
+  });
+
+  // GUARD — passes today. The coupling called out in the PRD: _allAttempts is
+  // rebuilt from node.attempts, so the kept window must stay ≥ 20.
+  it("E6 GUARD: round-trip leaves recordItemBoundary ≥ 20 attempts of history", () => {
+    const g = new SkillGraph([nodeWith("n_hot", 120)] as any, 5);
+    const wire = JSON.parse(JSON.stringify(g.toJSON()));
+    const reloaded = new SkillGraph(wire.nodes, wire.independence);
+
+    expect((reloaded as any)._allAttempts.length).toBeGreaterThanOrEqual(20);
+    expect(reloaded.getNode("n_hot")!.attempts.length).toBeGreaterThanOrEqual(20);
+  });
+
+  // GUARD — passes today. Ticket 006 (E5) must not regress through a
+  // truncating serialize.
+  it("E6 GUARD: independence still round-trips through a truncating serialize", () => {
+    const g = new SkillGraph([nodeWith("n_hot", 120)] as any, 7);
+    const wire = JSON.parse(JSON.stringify(g.toJSON()));
+
+    expect(wire.independence).toBe(7);
+    expect(new SkillGraph(wire.nodes, wire.independence).independence()).toBe(7);
+  });
+});
