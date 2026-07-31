@@ -1,7 +1,15 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
 import { render, screen, fireEvent, act } from "@testing-library/react";
 import React from "react";
+// prefetchNextSentence (the LIVE prefetch — not the dead prefetchNext) runs on
+// mount; mock the generator so we can observe it without hitting the network.
+vi.mock("../pipeline/sentenceGen", () => ({
+  generateBedtimeSentence: vi.fn(async () => null),
+  masteredWords: vi.fn(() => []),
+}));
+
 import { BedroomScreen } from "./BedroomScreen";
+import { generateBedtimeSentence } from "../pipeline/sentenceGen";
 import { SkillGraph } from "../graph/SkillGraph";
 import demoState from "../../../content/demo-state.json";
 import type { GraphNode } from "../graph/types";
@@ -74,6 +82,14 @@ describe("BedroomScreen", () => {
     const sentence = screen.getByTestId("reading-sentence");
     // At independence 2, gloss auto-shown
     expect(sentence).toBeTruthy();
+  });
+
+  // B1 guard (ticket 004): prefetchNextSentence must survive the deletion of
+  // the unrelated, dead contentPipeline.prefetchNext call in this screen.
+  it("B1 guard: prefetchNextSentence still runs on mount", () => {
+    (generateBedtimeSentence as any).mockClear();
+    render(<BedroomScreen graph={graph} seed="test" onAdvance={() => {}} independence={3} sessionPassedWords={["milk"]} />);
+    expect(generateBedtimeSentence).toHaveBeenCalled();
   });
 
   // AC15: idle ladder — no initial spinner

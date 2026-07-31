@@ -18,6 +18,8 @@ Object.defineProperty(HTMLMediaElement.prototype, "play", { writable: true, valu
 Object.defineProperty(HTMLMediaElement.prototype, "pause", { writable: true, value: vi.fn() });
 
 import { LivingRoomScreen } from "./LivingRoomScreen";
+import { contentPipeline } from "../pipeline/ContentPipeline";
+import { getFirstFrontierWord } from "../pipeline/sessionPrefetch";
 import { SkillGraph } from "../graph/SkillGraph";
 import demoState from "../../../content/demo-state.json";
 import type { GraphNode } from "../graph/types";
@@ -88,5 +90,49 @@ describe("LivingRoomScreen", () => {
   it("AC14: chat thread component is present", () => {
     render(<LivingRoomScreen graph={graph} seed="test" onAdvance={() => {}} independence={3} />);
     expect(screen.getByTestId("chat-thread")).toBeTruthy();
+  });
+
+  // B1 (ticket 004): the dead prefetchNext fires after a pass and POSTs
+  // /generate with no prompt — 400 + two retries, three doomed requests.
+  it("B1: a pass exchange issues no request to /generate", async () => {
+    const fetchMock = vi.fn(async (url: any) =>
+      String(url) === "/image"
+        ? ({ ok: true, json: async () => ({ url: "https://example.com/x.jpg" }) } as any)
+        : ({ ok: true, arrayBuffer: async () => new ArrayBuffer(8) } as any)
+    );
+    vi.stubGlobal("fetch", fetchMock);
+    contentPipeline.clearCache();
+
+    // Keep speakAbuela from deadlocking: jsdom never fires `ended`, so make
+    // play() reject — the catch path then falls through (no speechSynthesis).
+    const origPlay = HTMLMediaElement.prototype.play;
+    Object.defineProperty(HTMLMediaElement.prototype, "play", {
+      writable: true,
+      configurable: true,
+      value: vi.fn().mockRejectedValue(new Error("no audio in jsdom")),
+    });
+    const origCreateObjectURL = (URL as any).createObjectURL;
+    (URL as any).createObjectURL = vi.fn(() => "blob:stub");
+
+    try {
+      render(<LivingRoomScreen graph={graph} seed="test" onAdvance={() => {}} independence={3} />);
+      const word = getFirstFrontierWord(graph);
+
+      fireEvent.click(screen.getByTestId("mic-button"));
+      await act(async () => {
+        await srInstance.onresult({ results: [[{ transcript: word }]] } as any);
+      });
+
+      const urls = fetchMock.mock.calls.map((c) => String(c[0]));
+      expect(urls).not.toContain("/generate");
+    } finally {
+      (URL as any).createObjectURL = origCreateObjectURL;
+      Object.defineProperty(HTMLMediaElement.prototype, "play", {
+        writable: true,
+        configurable: true,
+        value: origPlay,
+      });
+      vi.unstubAllGlobals();
+    }
   });
 });
