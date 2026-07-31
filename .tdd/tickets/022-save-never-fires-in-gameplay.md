@@ -1,11 +1,11 @@
 ---
 id: 022
 title: "E4 save never fires during real gameplay"
-status: pending
+status: green
 depends_on: [012, 014]
 touches: [client/src/state/appStore.ts, client/src/screens/LivingRoomScreen.tsx, client/src/screens/FridgeScreen.tsx, client/src/screens/BedroomScreen.tsx]
-iterations: 0
-test_files: []
+iterations: 1
+test_files: [client/src/state/saveCadence.test.tsx]
 branch: ""
 ---
 

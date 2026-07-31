@@ -43,6 +43,15 @@ export interface AppState {
   advanceBeat: () => void;
   setMicState: (s: MicState) => void;
   recordGrade: (nodeIds: string[], result: 0 | 1, word: string) => void;
+  /** E4/D13: the item boundary AND its save, together. Screens grade themselves
+   *  and drive `graph.update(...)` directly; this is the one call that closes an
+   *  item, so it is also the only place a save can hang off without the two
+   *  drifting apart again (022).
+   *
+   *  Takes the graph EXPLICITLY: screens receive it as a prop and are rendered
+   *  standalone in tests, where the store singleton's `graph` is null. Reading
+   *  `get().graph` here would silently no-op. */
+  commitItemBoundary: (graph: SkillGraph) => void;
   /** Track pass/miss word lists only — for screens that update the graph themselves */
   recordWordResult: (word: string, result: 0 | 1) => void;
   setDebugOpen: (open: boolean) => void;
@@ -141,6 +150,14 @@ export function createAppStore() {
       } else {
         set((state) => ({ sessionPassedWords: [...state.sessionPassedWords, word] }));
       }
+    },
+
+    commitItemBoundary(graph: SkillGraph) {
+      if (!graph) return;
+      graph.recordItemBoundary();
+      // The save comes AFTER the boundary so the written band is the one the
+      // kid is actually playing at, not the previous item's.
+      saveLearnerState(graph);
     },
 
     recordWordResult(word: string, result: 0 | 1) {

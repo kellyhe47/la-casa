@@ -133,7 +133,8 @@ export function FridgeScreen({ graph, onAdvance, independence, sessionMissedWord
     const target = getNodesForWord(currentWord)[0] || "g_sh";
     graph.update([target], 0);
     graph.update([target], 0);
-    graph.recordItemBoundary();
+    // Two updates, ONE boundary — and therefore exactly one save.
+    appStore.getState().commitItemBoundary(graph);
   }, [currentWord, graph]);
 
   const handleWordComplete = useCallback((word: string) => {
@@ -143,7 +144,7 @@ export function FridgeScreen({ graph, onAdvance, independence, sessionMissedWord
 
     const nodeIds = getNodesForWord(currentWord);
     graph.update(nodeIds, 1);
-    graph.recordItemBoundary();
+    appStore.getState().commitItemBoundary(graph);
     appStore.getState().recordWordResult(currentWord, 1);
 
     setStickyNotes((prev) => [

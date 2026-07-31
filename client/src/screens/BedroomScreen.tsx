@@ -8,6 +8,7 @@ import type { SkillGraph } from "../graph/SkillGraph";
 import { contentPipeline } from "../pipeline/ContentPipeline";
 import { generateBedtimeSentence } from "../pipeline/sentenceGen";
 import { getLine } from "../pipeline/lines";
+import { appStore } from "../state/appStore";
 import { voices } from "../../../content/voices.json";
 
 const BABY_VOICE_ID = (voices as any)["voice.baby"].elevenLabsVoiceID;
@@ -120,7 +121,7 @@ export function BedroomScreen({ graph, seed, onAdvance, independence, sessionPas
 
       if (result.pass) {
         graph.update(uniqueNodeIds, 1);
-        graph.recordItemBoundary();
+        appStore.getState().commitItemBoundary(graph);
         setPageCompleted(true);
         setMissCount(0);
         setMomVisible(false);
@@ -143,7 +144,7 @@ export function BedroomScreen({ graph, seed, onAdvance, independence, sessionPas
         // 016/F3: a missed page is an item — record the boundary here so two
         // consecutive missed items can cost a band. Exactly one boundary per
         // item: the grace branch below no longer records its own.
-        graph.recordItemBoundary();
+        appStore.getState().commitItemBoundary(graph);
 
         if (newMissCount >= 2) {
           // Grace pattern
