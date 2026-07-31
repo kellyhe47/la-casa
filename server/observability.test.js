@@ -75,8 +75,18 @@ import { createMemoryStore } from './store.js'
 //     rest; `hit_rate` = hits / (hits + misses).
 //
 //   learning — over `grade` rows: `attempts` = rows in bucket, `passes` = rows
-//     with `payload.result === 'pass'`, `pass_rate` = passes / attempts, and
+//     with `payload.result === 1`, `pass_rate` = passes / attempts, and
 //     `band` = `payload.band_after` of the LAST grade row in the bucket by ts.
+//
+//     `payload.result` IS NUMERIC `0 | 1` — 1 = pass, 0 = fail. That is what the
+//     client actually posts: see `client/src/state/appStore.ts`
+//     (`recordGrade(nodeIds, result: 0 | 1, word)`) and
+//     `client/src/graph/SkillGraph.ts` (`update(nodeIds, result: 0 | 1)`).
+//     Comparing against the string `'pass'` makes the learning chart read a flat
+//     0% pass rate forever against real traffic — PRD §9 names that chart the
+//     differentiated one, to be protected if time runs short. Note also that a
+//     fail is `0`, which is FALSY: `passes` must not be counted by truthiness of
+//     a field that is legitimately zero, and `0` still counts as an `attempt`.
 //
 // --- H4. GET /debug/logs?key=… ----------------------------------------------
 //
@@ -146,7 +156,8 @@ const seedUpstream = (
     },
   })
 
-const seedGrade = ({ result = 'pass', bandAfter = 3, ts, word = 'manzana' }) =>
+// `result` is numeric: 1 = pass, 0 = fail (matches the client's `0 | 1`).
+const seedGrade = ({ result = 1, bandAfter = 3, ts, word = 'manzana' }) =>
   store.insertEvent({
     type: 'grade',
     ts,
@@ -318,7 +329,7 @@ describe('H2: /debug/metrics returns buckets, not raw rows', () => {
 
   it('excludes events outside the requested window', async () => {
     await seedUpstream({ provider: 'openai', durationMs: 111, ts: T_OLD })
-    await seedGrade({ result: 'pass', bandAfter: 5, ts: T_OLD })
+    await seedGrade({ result: 1, bandAfter: 5, ts: T_OLD })
 
     const oneHour = (await metrics('&window=1h')).body
     expect(oneHour.series.upstream).toHaveLength(0)
@@ -431,10 +442,10 @@ describe('H2: cache hit rate series', () => {
 
 describe('H2: learning signal series', () => {
   it('derives pass rate from grade rows and the band from band_after', async () => {
-    await seedGrade({ result: 'pass', bandAfter: 3, ts: at(-28 * MIN) })
-    await seedGrade({ result: 'pass', bandAfter: 4, ts: at(-28 * MIN + 1000) })
-    await seedGrade({ result: 'fail', bandAfter: 4, ts: at(-28 * MIN + 2000) })
-    await seedGrade({ result: 'pass', bandAfter: 5, ts: at(-28 * MIN + 3000) })
+    await seedGrade({ result: 1, bandAfter: 3, ts: at(-28 * MIN) })
+    await seedGrade({ result: 1, bandAfter: 4, ts: at(-28 * MIN + 1000) })
+    await seedGrade({ result: 0, bandAfter: 4, ts: at(-28 * MIN + 2000) })
+    await seedGrade({ result: 1, bandAfter: 5, ts: at(-28 * MIN + 3000) })
 
     const { series } = (await metrics('&window=1h')).body
     const bucket = series.learning.find((r) => r.bucket === BUCKET_A)
@@ -445,8 +456,8 @@ describe('H2: learning signal series', () => {
   })
 
   it('tracks the band across buckets over the session timeline', async () => {
-    await seedGrade({ result: 'fail', bandAfter: 2, ts: T_A })
-    await seedGrade({ result: 'pass', bandAfter: 6, ts: T_B })
+    await seedGrade({ result: 0, bandAfter: 2, ts: T_A })
+    await seedGrade({ result: 1, bandAfter: 6, ts: T_B })
 
     const { series } = (await metrics('&window=1h')).body
 
@@ -456,9 +467,29 @@ describe('H2: learning signal series', () => {
     ])
   })
 
+  // THE REGRESSION: `payload.result` is numeric `0 | 1`, not `'pass' | 'fail'`.
+  // Comparing against a string scores every real attempt as a fail, and the
+  // learning chart flatlines at 0% forever. Comparing by truthiness is the
+  // mirror-image bug: `0` is a legitimate value that must still be an attempt.
+  it('counts numeric 1 as a pass and numeric 0 as an attempt but not a pass', async () => {
+    await seedGrade({ result: 1, bandAfter: 4, ts: at(-28 * MIN) })
+    await seedGrade({ result: 0, bandAfter: 3, ts: at(-28 * MIN + 1000) })
+
+    const { series } = (await metrics('&window=1h')).body
+
+    expect(series.learning).toHaveLength(1)
+    expect(series.learning[0]).toMatchObject({
+      bucket: BUCKET_A,
+      attempts: 2,
+      passes: 1,
+      pass_rate: 0.5,
+      band: 3,
+    })
+  })
+
   it('ignores non-grade events when computing pass rate', async () => {
     await seedUpstream({ provider: 'openai', status: 500, ts: T_A })
-    await seedGrade({ result: 'pass', bandAfter: 4, ts: T_A })
+    await seedGrade({ result: 1, bandAfter: 4, ts: T_A })
 
     const { series } = (await metrics('&window=1h')).body
 
@@ -519,7 +550,7 @@ describe('H4: GET /debug/logs renders the last rows as an HTML table', () => {
       error: 'upstream_error',
       ts: at(-4000),
     })
-    const ok2 = await seedGrade({ result: 'fail', bandAfter: 3, ts: at(-3000) })
+    const ok2 = await seedGrade({ result: 0, bandAfter: 3, ts: at(-3000) })
     const clientErr = await store.insertEvent({
       type: 'client_error',
       ts: at(-2000),
