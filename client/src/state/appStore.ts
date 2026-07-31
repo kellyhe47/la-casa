@@ -5,6 +5,18 @@ import { SCREEN_ORDER } from "./types";
 import demoState from "../../../content/demo-state.json";
 import type { GraphNode } from "../graph/types";
 import { saveLearnerState } from "./saveState";
+import { apiHeaders, getLearnerId, resetLearnerId } from "./learnerId";
+
+/** The wire shape of `GET /state/:id`. `independence` rides both on the graph
+ *  (021's `toJSON()`) and at the top level (E4's save envelope). */
+interface SavedStateReply {
+  graph?: {
+    nodes?: GraphNode[];
+    independence?: number;
+    attempts?: Array<{ result: 0 | 1; timestamp: number }>;
+  };
+  independence?: number;
+}
 
 export interface AppState {
   screen: Screen;
@@ -12,12 +24,22 @@ export interface AppState {
   micState: MicState;
   graph: SkillGraph | null;
   debugOpen: boolean;
+  /** E7: true once hydrate() has found saved state on the server. Drives the
+   *  D14 new-game affordance, which stays hidden for first-time players. */
+  hasSavedState: boolean;
   // Collected session data for bedroom sentences
   sessionMissedWords: string[];
   sessionPassedWords: string[];
 
   // Actions
   startSession: () => void;
+  /** E7/E8: fetch the saved graph and upgrade the live one in place. Async and
+   *  fire-and-forget — gameplay is never blocked on the network, and a missing
+   *  or failed fetch silently leaves the fresh band-3 session alone. */
+  hydrate: () => Promise<void>;
+  /** D14: warm-seed reset onto a brand-new uuid. The old learner row is
+   *  preserved server-side — nothing is deleted and nothing is written. */
+  newGame: () => void;
   advanceBeat: () => void;
   setMicState: (s: MicState) => void;
   recordGrade: (nodeIds: string[], result: 0 | 1, word: string) => void;
@@ -35,6 +57,7 @@ export function createAppStore() {
     micState: "idle",
     graph: null,
     debugOpen: false,
+    hasSavedState: false,
     sessionMissedWords: [],
     sessionPassedWords: [],
 
@@ -42,6 +65,52 @@ export function createAppStore() {
       const seed = Math.random().toString(36).slice(2, 10);
       const graph = new SkillGraph(demoState.nodes as unknown as GraphNode[]);
       set({ sessionSeed: seed, graph, screen: "title", micState: "idle" });
+    },
+
+    async hydrate() {
+      // E7: the resume is SILENT. Nothing here touches `screen`, `sessionSeed`
+      // or the rail — only the band and node mastery differ.
+      try {
+        if (typeof fetch !== "function") return;
+        const res = await fetch(`/state/${getLearnerId()}`, {
+          method: "GET",
+          headers: apiHeaders(),
+        });
+        // 404 is the expected first-visit answer, not an error — no telemetry.
+        // Any other status degrades to the fresh session already in place.
+        if (!res || !res.ok) return;
+        const body = (await res.json()) as SavedStateReply | null;
+        const saved = body?.graph;
+        if (!saved || !Array.isArray(saved.nodes) || saved.nodes.length === 0) return;
+        // E8/D16: the saved band is restored exactly as-is, however stale the
+        // save. A rusty kid trips the 2-consecutive-miss rule within the first
+        // minute and the scaffolding returns on its own.
+        const graph = new SkillGraph(
+          saved.nodes,
+          saved.independence ?? body?.independence,
+          saved.attempts,
+        );
+        set({ graph, hasSavedState: true });
+      } catch {
+        // Offline, malformed JSON, anything: startup can never hang or throw.
+      }
+    },
+
+    newGame() {
+      // D14: a fresh uuid, so the previous learner row is preserved untouched
+      // on the server. No DELETE, and no request at all against the old id.
+      resetLearnerId();
+      const seed = Math.random().toString(36).slice(2, 10);
+      const graph = new SkillGraph(demoState.nodes as unknown as GraphNode[]);
+      set({
+        sessionSeed: seed,
+        graph,
+        screen: "title",
+        micState: "idle",
+        hasSavedState: false,
+        sessionMissedWords: [],
+        sessionPassedWords: [],
+      });
     },
 
     advanceBeat() {

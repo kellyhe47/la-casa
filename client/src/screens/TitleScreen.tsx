@@ -4,12 +4,28 @@ import { TitleScene } from "../assets/AssetStore";
 interface TitleScreenProps {
   onAdvance: () => void;
   onSessionStart?: () => void;
+  /** D14: the new-game control is hidden until the learner has saved state, so
+   *  a first-time player never sees it. Defaults to hidden. */
+  hasSavedState?: boolean;
+  /** D14: fired ONLY once the confirm dialog is confirmed. */
+  onNewGame?: () => void;
 }
 
 type State = "idle" | "requesting" | "mic-check" | "denied" | "transition";
 
-export function TitleScreen({ onAdvance, onSessionStart }: TitleScreenProps) {
+export function TitleScreen({
+  onAdvance,
+  onSessionStart,
+  hasSavedState = false,
+  onNewGame,
+}: TitleScreenProps) {
   const [state, setState] = useState<State>("idle");
+  const [confirmingNewGame, setConfirmingNewGame] = useState(false);
+
+  const confirmNewGame = useCallback(() => {
+    setConfirmingNewGame(false);
+    onNewGame?.();
+  }, [onNewGame]);
 
   const handleJugar = useCallback(async () => {
     onSessionStart?.();
@@ -140,6 +156,107 @@ export function TitleScreen({ onAdvance, onSessionStart }: TitleScreenProps) {
           </div>
         )}
       </div>
+
+      {/* D14: new game. Hidden entirely for first-time players, and tucked in
+          the corner so it never competes with ¡Jugar!. */}
+      {state === "idle" && hasSavedState && (
+        <button
+          data-testid="new-game"
+          aria-label="Empezar un juego nuevo"
+          onClick={() => setConfirmingNewGame(true)}
+          style={{
+            position: "absolute",
+            top: 16,
+            right: 16,
+            fontFamily: "'Baloo 2', sans-serif",
+            fontWeight: 700,
+            fontSize: 18,
+            color: "#6F4B35",
+            background: "rgba(253, 243, 227, 0.92)",
+            border: "3px solid #C98A54",
+            borderRadius: 20,
+            padding: "8px 18px",
+            cursor: "pointer",
+            boxShadow: "0 3px 0 #C98A54",
+          }}
+        >
+          Nuevo juego
+        </button>
+      )}
+
+      {/* In-app confirm dialog — never window.confirm. */}
+      {confirmingNewGame && (
+        <div
+          style={{
+            position: "absolute",
+            inset: 0,
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            background: "rgba(0,0,0,0.55)",
+          }}
+        >
+          <div
+            role="dialog"
+            aria-modal="true"
+            aria-label="Nuevo juego"
+            style={{
+              background: "#FDF3E3",
+              border: "6px solid #C98A54",
+              borderRadius: 28,
+              padding: "28px 36px",
+              maxWidth: 460,
+              textAlign: "center",
+              color: "#6F4B35",
+              fontFamily: "'Baloo 2', sans-serif",
+              boxShadow: "0 12px 40px rgba(0,0,0,0.45)",
+            }}
+          >
+            <p style={{ fontSize: 28, fontWeight: 800, marginBottom: 10 }}>
+              ¿Empezar un juego nuevo?
+            </p>
+            <p style={{ fontSize: 18, marginBottom: 22 }}>
+              La casa vuelve a empezar desde el principio.
+            </p>
+            <div style={{ display: "flex", gap: 14, justifyContent: "center" }}>
+              <button
+                data-testid="new-game-cancel"
+                onClick={() => setConfirmingNewGame(false)}
+                style={{
+                  fontFamily: "'Baloo 2', sans-serif",
+                  fontWeight: 700,
+                  fontSize: 22,
+                  color: "#6F4B35",
+                  background: "#FFFAF0",
+                  border: "4px solid #C98A54",
+                  borderRadius: 20,
+                  padding: "10px 24px",
+                  cursor: "pointer",
+                }}
+              >
+                Cancelar
+              </button>
+              <button
+                data-testid="new-game-confirm"
+                onClick={confirmNewGame}
+                style={{
+                  fontFamily: "'Baloo 2', sans-serif",
+                  fontWeight: 800,
+                  fontSize: 22,
+                  color: "#FFFAF0",
+                  background: "#E0674A",
+                  border: "4px solid #6F4B35",
+                  borderRadius: 20,
+                  padding: "10px 24px",
+                  cursor: "pointer",
+                }}
+              >
+                Sí, empezar
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       <style>{`
         @keyframes jugar-pulse {

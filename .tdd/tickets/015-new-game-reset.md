@@ -1,11 +1,11 @@
 ---
 id: 015
 title: "D14 — new game: warm-seed reset, fresh UUID, confirm dialog"
-status: pending
+status: green
 depends_on: [014]
 touches: [client/src/state/appStore.ts, client/src/screens/TitleScreen.tsx, client/src/state/learnerId.ts]
-iterations: 0
-test_files: []
+iterations: 1
+test_files: [client/src/screens/newGame.test.tsx]
 branch: ""
 ---
 

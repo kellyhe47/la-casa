@@ -1,11 +1,11 @@
 ---
 id: 014
 title: "E7/E8 — silent hydration on startup with exact band resume"
-status: pending
+status: green
 depends_on: [012, 013]
 touches: [client/src/state/appStore.ts, client/src/App.tsx]
-iterations: 0
-test_files: []
+iterations: 1
+test_files: [client/src/state/hydration.test.ts]
 branch: ""
 ---
 

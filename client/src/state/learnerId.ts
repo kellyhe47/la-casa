@@ -70,6 +70,25 @@ export function getLearnerId(): string {
   return id
 }
 
+/** TICKET 015 / D14 — mint a brand-new learner uuid and persist it, replacing
+ *  the old one. Purely local: the previous learner row stays on the server
+ *  untouched (nothing is deleted), it simply stops being addressed. */
+export function resetLearnerId(): string {
+  const id = generateUuid()
+  // Keep the in-memory fallback in step so a storage-less environment also
+  // sees the new identity for the life of the page.
+  fallbackId = id
+  const store = storage()
+  if (store) {
+    try {
+      store.setItem(LEARNER_ID_KEY, id)
+    } catch {
+      // Storage refused the write — the in-memory fallback carries the session.
+    }
+  }
+  return id
+}
+
 /** Standard headers for every JSON API call: content type + learner identity.
  *  A plain object (not a Headers instance) so callers can inspect/extend it. */
 export function apiHeaders(): Record<string, string> {

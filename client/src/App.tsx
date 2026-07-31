@@ -18,8 +18,9 @@ const debugStartOpen = urlParams.get("debug") === "1";
 
 export default function App() {
   const state = useStore(appStore);
-  const { screen, sessionSeed, graph, debugOpen, sessionMissedWords, sessionPassedWords } = state;
+  const { screen, sessionSeed, graph, debugOpen, hasSavedState, sessionMissedWords, sessionPassedWords } = state;
   const prevScreenRef = useRef<Screen | null>(null);
+  const hydrateStartedRef = useRef(false);
   const [showTransition, setShowTransition] = React.useState(false);
   const [transitionFrom, setTransitionFrom] = React.useState<Screen>("title");
   const [lastGrade, setLastGrade] = React.useState<{ word: string; result: 0 | 1; nodeId: string; delta: number } | null>(null);
@@ -60,6 +61,23 @@ export default function App() {
     }
     const { graph: g, sessionSeed: s } = appStore.getState();
     if (g && s) prefetchSessionStart(g, s);
+    // E7/E8: hydrate the saved band + mastery in the background. Deliberately
+    // NOT awaited — first paint and the rail never wait on the network, and a
+    // 404 (new player) or a failure just leaves the fresh band-3 session up.
+    // The resume is silent: no copy anywhere says "welcome back".
+    // Guarded like startSession above so StrictMode doesn't double-fetch.
+    if (!hydrateStartedRef.current) {
+      hydrateStartedRef.current = true;
+      void appStore
+        .getState()
+        .hydrate()
+        .then(() => {
+          // The seed graph's frontier may differ from the hydrated one, so warm
+          // the real first exchange once the saved mastery has landed.
+          const { graph: g2, sessionSeed: s2, hasSavedState: resumed } = appStore.getState();
+          if (resumed && g2 && s2) prefetchSessionStart(g2, s2);
+        });
+    }
     // Background music from app open (falls back to first interaction if
     // the browser blocks autoplay); fades out when Abuela first speaks
     startIntroSound();
@@ -103,6 +121,12 @@ export default function App() {
               // After mic granted + check, advance via transition
               appStore.getState().setMicState("granted");
               handleAdvance();
+            }}
+            hasSavedState={hasSavedState}
+            onNewGame={() => {
+              appStore.getState().newGame();
+              const { graph: fresh, sessionSeed: seed } = appStore.getState();
+              if (fresh && seed) prefetchSessionStart(fresh, seed);
             }}
           />
         );
