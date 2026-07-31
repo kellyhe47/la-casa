@@ -1,11 +1,11 @@
 ---
 id: 006
 title: "E5 — SkillGraph constructor accepts a saved independence value"
-status: pending
+status: green
 depends_on: []
 touches: [client/src/graph/SkillGraph.ts, client/src/graph/SkillGraph.test.ts]
-iterations: 0
-test_files: []
+iterations: 1
+test_files: [client/src/graph/SkillGraph.test.ts]
 branch: ""
 ---
 

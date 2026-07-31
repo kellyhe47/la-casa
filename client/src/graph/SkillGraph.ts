@@ -6,9 +6,10 @@ export class SkillGraph {
   // Track all graded attempts for independence computation
   private _allAttempts: Array<{ result: 0 | 1; timestamp: number }>;
 
-  constructor(nodes: GraphNode[]) {
+  constructor(nodes: GraphNode[], independence?: number) {
     this.nodes = nodes.map((n) => ({ ...n, attempts: [...(n.attempts || [])] }));
-    this._independence = 3; // R5.3: sessions start at band 3
+    // E5: resume a saved band when one is supplied; E8/R5.3: new players start at 3
+    this._independence = independence ?? 3;
     this._allAttempts = [];
     // Load existing attempts from nodes into global list for independence computation
     for (const node of this.nodes) {
