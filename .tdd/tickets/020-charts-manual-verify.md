@@ -1,11 +1,11 @@
 ---
 id: 020
 title: "H3 — three Chart.js charts (rendering: manual verify)"
-status: pending
+status: green
 depends_on: [019]
 touches: [server/public/observability.html]
-iterations: 0
-test_files: []
+iterations: 1
+test_files: [server/observability.test.js]
 branch: ""
 ---
 
@@ -48,3 +48,20 @@ Manual-verify (recorded, not automated):
 _(test-writer fills in)_
 
 ## Attempt log
+
+## Manual verification (2026-07-31, real browser, seeded data)
+
+Chart.js 4.4.1 loaded from `https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js`.
+All three canvases instantiated; zero console errors.
+
+- **Chart 1 — upstream health:** `type: line`, one dataset per provider
+  (elevenlabs, openai); failure buckets drawn via a scriptable
+  `pointBackgroundColor` and visibly red on both series. ✅
+- **Chart 2 — cache hit rate:** `type: bar`, datasets
+  `elevenlabs hits/misses`, `openai hits/misses`. ✅
+- **Chart 3 — learning signal (the protected one):** `type: line`, datasets
+  `pass rate` + `independence band`, on **two y-axes** (`y` 0–1 as %, `yBand`
+  1–10) so the pass rate stays visible against the band's range. ✅
+- Empty states (`No data yet`) hidden once data is present; shown on an empty
+  store; a 401 from `/debug/metrics` surfaces a load error rather than three
+  blank panels.

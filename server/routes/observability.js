@@ -8,6 +8,244 @@ import { buildMetrics, isErrorEvent, resolveWindow } from '../metrics.js'
 
 const LOG_LIMIT = 200
 
+/** PRD §9.3 — Chart.js comes from a CDN, not a bundle. */
+const CHART_JS_CDN = 'https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js'
+
+/**
+ * The client half of H3. Deliberately key-free: it reads the metrics URL (which
+ * already carries the key presented on THIS request) off the dashboard's
+ * `data-metrics-url` attribute, so a rotated secret can never go stale here.
+ * Plain ES5-ish, no template literals — this text is embedded in a JS template
+ * string and must not carry `${` or a closing script tag.
+ */
+const DASHBOARD_SCRIPT = `
+(function () {
+  var root = document.getElementById('observability-dashboard')
+  if (!root) return
+  var metricsUrl = root.getAttribute('data-metrics-url')
+  var url = metricsUrl + (metricsUrl.indexOf('?') === -1 ? '?' : '&') + 'window=1h'
+
+  var PROVIDERS = ['elevenlabs', 'openai', 'anthropic']
+  var COLORS = { elevenlabs: '#7cc4ff', openai: '#7ee7a8', anthropic: '#f6c177' }
+  var FAIL = '#ff5c5c'
+  var GRID = '#262c39'
+  var TICK = '#98a2b3'
+  var EMPTIES = ['empty-upstream', 'empty-cache', 'empty-learning']
+
+  function setEmpty(id, show, text) {
+    var node = document.getElementById(id)
+    if (!node) return
+    if (text) node.textContent = text
+    node.style.display = show ? 'flex' : 'none'
+  }
+
+  function labelOf(iso) {
+    var d = new Date(iso)
+    return isNaN(d.getTime()) ? String(iso) : d.toISOString().slice(11, 16)
+  }
+
+  // Ascending, de-duplicated bucket timestamps: the shared x axis of a series.
+  function bucketsOf(rows) {
+    var seen = {}
+    var out = []
+    rows.forEach(function (r) {
+      if (!seen[r.bucket]) { seen[r.bucket] = 1; out.push(r.bucket) }
+    })
+    out.sort()
+    return out
+  }
+
+  // upstream/cache carry one row per (bucket, provider) — index them so each
+  // provider becomes one dataset aligned to the shared bucket axis.
+  function index(rows) {
+    var map = {}
+    rows.forEach(function (r) { map[r.provider + '|' + r.bucket] = r })
+    return map
+  }
+
+  function providersIn(rows) {
+    var present = {}
+    rows.forEach(function (r) { present[r.provider] = 1 })
+    var known = PROVIDERS.filter(function (p) { return present[p] })
+    Object.keys(present).forEach(function (p) {
+      if (known.indexOf(p) === -1) known.push(p)
+    })
+    return known
+  }
+
+  function colorOf(provider, i) {
+    return COLORS[provider] || ['#c4b5fd', '#f9a8d4', '#5eead4'][i % 3]
+  }
+
+  function baseOptions(scales) {
+    return {
+      responsive: true,
+      maintainAspectRatio: false,
+      interaction: { mode: 'index', intersect: false },
+      plugins: { legend: { labels: { color: '#e6e8ee', boxWidth: 12 } } },
+      scales: scales,
+    }
+  }
+
+  function axis(extra) {
+    var a = { grid: { color: GRID }, ticks: { color: TICK } }
+    for (var k in extra) a[k] = extra[k]
+    return a
+  }
+
+  // ---- chart 1: upstream health --------------------------------------------
+  // One p95 line per provider; any bucket with failures gets a red point.
+  function drawUpstream(rows) {
+    setEmpty('empty-upstream', rows.length === 0)
+    if (rows.length === 0) return
+    var labels = bucketsOf(rows)
+    var byKey = index(rows)
+    var datasets = providersIn(rows).map(function (provider, i) {
+      var color = colorOf(provider, i)
+      var points = labels.map(function (b) {
+        var r = byKey[provider + '|' + b]
+        return r ? r.p95_ms : null
+      })
+      var failed = labels.map(function (b) {
+        var r = byKey[provider + '|' + b]
+        return !!(r && r.failures > 0)
+      })
+      return {
+        label: provider,
+        data: points,
+        borderColor: color,
+        backgroundColor: color,
+        spanGaps: true,
+        tension: 0.25,
+        pointRadius: function (ctx) { return failed[ctx.dataIndex] ? 5 : 3 },
+        pointBackgroundColor: function (ctx) { return failed[ctx.dataIndex] ? FAIL : color },
+        pointBorderColor: function (ctx) { return failed[ctx.dataIndex] ? FAIL : color },
+      }
+    })
+    new Chart(document.getElementById('chart-upstream'), {
+      type: 'line',
+      data: { labels: labels.map(labelOf), datasets: datasets },
+      options: baseOptions({
+        x: axis({}),
+        y: axis({ beginAtZero: true, title: { display: true, text: 'p95 ms', color: TICK } }),
+      }),
+    })
+  }
+
+  // ---- chart 2: cache hit rate ---------------------------------------------
+  function drawCache(rows) {
+    setEmpty('empty-cache', rows.length === 0)
+    if (rows.length === 0) return
+    var labels = bucketsOf(rows)
+    var byKey = index(rows)
+    var datasets = []
+    providersIn(rows).forEach(function (provider, i) {
+      var color = colorOf(provider, i)
+      datasets.push({
+        label: provider + ' hits',
+        data: labels.map(function (b) {
+          var r = byKey[provider + '|' + b]
+          return r ? r.hits : 0
+        }),
+        backgroundColor: color,
+        stack: provider,
+      })
+      datasets.push({
+        label: provider + ' misses',
+        data: labels.map(function (b) {
+          var r = byKey[provider + '|' + b]
+          return r ? r.misses : 0
+        }),
+        backgroundColor: color + '55',
+        borderColor: color,
+        borderWidth: 1,
+        stack: provider,
+      })
+    })
+    new Chart(document.getElementById('chart-cache'), {
+      type: 'bar',
+      data: { labels: labels.map(labelOf), datasets: datasets },
+      options: baseOptions({
+        x: axis({ stacked: true }),
+        y: axis({ stacked: true, beginAtZero: true, title: { display: true, text: 'requests', color: TICK } }),
+      }),
+    })
+  }
+
+  // ---- chart 3: learning signal (the protected chart) ----------------------
+  // pass_rate is 0..1 and band is 1..10, so they get separate y axes; on one
+  // axis the pass rate flattens into the baseline and the chart says nothing.
+  function drawLearning(rows) {
+    setEmpty('empty-learning', rows.length === 0)
+    if (rows.length === 0) return
+    var labels = rows.map(function (r) { return labelOf(r.bucket) })
+    new Chart(document.getElementById('chart-learning'), {
+      type: 'line',
+      data: {
+        labels: labels,
+        datasets: [
+          {
+            label: 'pass rate',
+            yAxisID: 'y',
+            data: rows.map(function (r) { return r.pass_rate }),
+            borderColor: '#7ee7a8',
+            backgroundColor: '#7ee7a833',
+            fill: true,
+            tension: 0.25,
+            pointRadius: 3,
+          },
+          {
+            label: 'independence band',
+            yAxisID: 'yBand',
+            data: rows.map(function (r) { return r.band }),
+            borderColor: '#f6c177',
+            backgroundColor: '#f6c177',
+            borderDash: [5, 4],
+            tension: 0.25,
+            pointRadius: 3,
+            spanGaps: true,
+          },
+        ],
+      },
+      options: baseOptions({
+        x: axis({}),
+        y: axis({
+          position: 'left',
+          min: 0,
+          max: 1,
+          title: { display: true, text: 'pass rate', color: TICK },
+          ticks: { color: TICK, callback: function (v) { return Math.round(v * 100) + '%' } },
+        }),
+        yBand: axis({
+          position: 'right',
+          min: 1,
+          max: 10,
+          grid: { drawOnChartArea: false, color: GRID },
+          title: { display: true, text: 'band', color: TICK },
+        }),
+      }),
+    })
+  }
+
+  fetch(url, { headers: { accept: 'application/json' } })
+    .then(function (res) {
+      if (!res.ok) throw new Error('metrics responded ' + res.status)
+      return res.json()
+    })
+    .then(function (data) {
+      var series = (data && data.series) || {}
+      drawUpstream(series.upstream || [])
+      drawCache(series.cache || [])
+      drawLearning(series.learning || [])
+    })
+    .catch(function (err) {
+      EMPTIES.forEach(function (id) {
+        setEmpty(id, true, 'Could not load metrics: ' + err.message)
+      })
+    })
+})()
+`
+
 const escapeHtml = (value) =>
   String(value)
     .replaceAll('&', '&amp;')
@@ -58,6 +296,11 @@ export function renderDashboard(key) {
   .panel { background: #171b24; border: 1px solid #262c39; border-radius: 8px; padding: 16px }
   .panel h2 { font-size: 14px; margin: 0 0 8px }
   .panel p { color: #98a2b3; margin: 0 }
+  .chart-wrap { position: relative; height: 240px; margin-top: 12px }
+  .chart-wrap canvas { width: 100% !important; height: 100% !important }
+  .chart-empty { position: absolute; inset: 0; display: flex; align-items: center;
+                 justify-content: center; text-align: center; padding: 0 12px;
+                 color: #98a2b3; background: #171b24; border-radius: 6px }
 </style>
 </head>
 <body>
@@ -71,13 +314,27 @@ export function renderDashboard(key) {
   </nav>
   <div class="panels">
     <section class="panel" id="panel-upstream"><h2>Upstream health</h2>
-      <p>p95 latency and failures per provider.</p></section>
+      <p>p95 latency and failures per provider.</p>
+      <div class="chart-wrap">
+        <canvas id="chart-upstream"></canvas>
+        <p class="chart-empty" id="empty-upstream">No data yet &mdash; no upstream calls in this window.</p>
+      </div></section>
     <section class="panel" id="panel-cache"><h2>Cache hit rate</h2>
-      <p>Hits vs misses per provider.</p></section>
+      <p>Hits vs misses per provider.</p>
+      <div class="chart-wrap">
+        <canvas id="chart-cache"></canvas>
+        <p class="chart-empty" id="empty-cache">No data yet &mdash; no cache activity in this window.</p>
+      </div></section>
     <section class="panel" id="panel-learning"><h2>Learning signal</h2>
-      <p>Pass rate and independence band over the timeline.</p></section>
+      <p>Pass rate and independence band over the timeline.</p>
+      <div class="chart-wrap">
+        <canvas id="chart-learning"></canvas>
+        <p class="chart-empty" id="empty-learning">No data yet &mdash; no graded attempts in this window.</p>
+      </div></section>
   </div>
 </main>
+<script src="${CHART_JS_CDN}"></script>
+<script>${DASHBOARD_SCRIPT}</script>
 </body>
 </html>
 `
