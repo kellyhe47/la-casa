@@ -207,6 +207,11 @@ export function LivingRoomScreen({ graph, onAdvance }: LivingRoomScreenProps) {
         const newMissCount = missCount + 1;
         setMissCount(newMissCount);
         graph.update([nodeIds[0] || "g_sh"], 0);
+        // 016/F3: a missed item is an item — the band must be allowed to tick
+        // here, not only on pass/grace, or two consecutive misses can never
+        // cost a band. Exactly one boundary per item: the grace branch below
+        // no longer records its own.
+        graph.recordItemBoundary();
 
         // Show what was heard as Sofía's bubble so the correction has context
         const heardWord = transcript.trim().toLowerCase();
@@ -222,7 +227,6 @@ export function LivingRoomScreen({ graph, onAdvance }: LivingRoomScreenProps) {
           setItemCompleted(true);
           setIsExitDimmed(false);
           setMissCount(0);
-          graph.recordItemBoundary();
           setLoopState("arrival");
           const nextWord = nextFrontierWord();
           setCurrentWord(nextWord);

@@ -139,6 +139,10 @@ export function BedroomScreen({ graph, seed, onAdvance, independence, sessionPas
         const newMissCount = missCount + 1;
         setMissCount(newMissCount);
         graph.update([uniqueNodeIds[0] || "g_ee"], 0);
+        // 016/F3: a missed page is an item — record the boundary here so two
+        // consecutive missed items can cost a band. Exactly one boundary per
+        // item: the grace branch below no longer records its own.
+        graph.recordItemBoundary();
 
         if (newMissCount >= 2) {
           // Grace pattern
@@ -147,9 +151,10 @@ export function BedroomScreen({ graph, seed, onAdvance, independence, sessionPas
           const graceText = `Léelo conmigo: ${currentSentence}`;
           setStatusText(graceText);
           await playAudio(graceText, MOM_VOICE_ID);
-          // Auto-pass after grace
-          graph.update(uniqueNodeIds, 1);
-          graph.recordItemBoundary();
+          // 017/F2: NO mastery credit here. Grace is an experience, not a pass —
+          // crediting every node in the sentence for a line the kid could not
+          // read inverts "generous credit, precise blame". The item still ends:
+          // Mom models it, the book advances, the exit unlocks.
           setPageCompleted(true);
           setBabyMood("happy");
           setStatusText(BABY_GIGGLES[0]);

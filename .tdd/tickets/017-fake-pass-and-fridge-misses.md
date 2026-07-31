@@ -1,11 +1,11 @@
 ---
 id: 017
 title: "F2/F4 — delete bedroom fake pass; record fridge misses once per scene"
-status: pending
+status: green
 depends_on: [016]
 touches: [client/src/screens/BedroomScreen.tsx, client/src/screens/FridgeScreen.tsx]
-iterations: 0
-test_files: []
+iterations: 1
+test_files: [client/src/screens/BedroomScreen.test.tsx, client/src/screens/FridgeScreen.test.tsx]
 branch: ""
 ---
 

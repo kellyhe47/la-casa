@@ -80,6 +80,15 @@ export class SkillGraph {
   /**
    * Call at each item boundary to allow independence to tick.
    * Implements hysteresis: moves at most 1 band per call.
+   *
+   * 016/F1 (locked decision D9): the band comes DOWN when the last TWO ITEMS
+   * are both misses, floor 1 — replacing the MVP "≥3 misses in the last 5",
+   * which could never fire because grace caps consecutive misses at 2. Two
+   * consecutive misses IS the grace trigger, so every graced item costs a band.
+   * Band-UP is unchanged: a 3-item pass streak, ceiling 10.
+   *
+   * 021: `_allAttempts` is a per-ITEM history (one entry per update() call), so
+   * "two consecutive misses" means two consecutive ITEMS, never two nodes.
    */
   recordItemBoundary(): void {
     const recent = this._allAttempts.slice(-20);
@@ -87,15 +96,16 @@ export class SkillGraph {
     const accuracy = recent.reduce((sum, a) => sum + a.result, 0) / recent.length;
     const candidate = Math.min(10, Math.max(1, Math.round(accuracy * 10)));
 
-    const last5 = this._allAttempts.slice(-5);
-    const missCount = last5.filter((a) => a.result === 0).length;
+    const last2 = this._allAttempts.slice(-2);
+    const twoConsecutiveMisses =
+      last2.length === 2 && last2.every((a) => a.result === 0);
     const isPassStreak =
       this._allAttempts.slice(-3).every((a) => a.result === 1) &&
       this._allAttempts.length >= 3;
 
     if (candidate > this._independence && isPassStreak) {
       this._independence = Math.min(10, this._independence + 1);
-    } else if (missCount >= 3) {
+    } else if (twoConsecutiveMisses) {
       this._independence = Math.max(1, this._independence - 1);
     }
   }

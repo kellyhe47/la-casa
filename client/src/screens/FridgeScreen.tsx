@@ -56,6 +56,12 @@ export function FridgeScreen({ graph, onAdvance, sessionMissedWords, sessionPass
   const [itemCompleted, setItemCompleted] = useState(false);
   const [loopState, setLoopState] = useState<"wait" | "prompt" | "dragging" | "stick" | "goodnight">("prompt");
   const [trayKey, setTrayKey] = useState(0); // force remount MagnetTray on new word
+  // 017/F4 (locked decision D10): wrong letters cost a band, at most once per
+  // scene. `wrongLettersRef` counts rejected placements for the CURRENT word and
+  // resets with every new word; `sceneFailureRecordedRef` latches after the one
+  // failure this scene is allowed to record, so later flailing changes nothing.
+  const wrongLettersRef = useRef(0);
+  const sceneFailureRecordedRef = useRef(false);
   const audioRef = useRef<HTMLAudioElement | null>(null);
   // Flipped on unmount — a TTS response landing late must not speak over the
   // bedroom scene (only Mamá and the baby talk there)
@@ -100,7 +106,29 @@ export function FridgeScreen({ graph, onAdvance, sessionMissedWords, sessionPass
     // Speak the word (R4.4.1: no caption, audio only)
     playAudio(prompt, DAD_VOICE_ID);
     setLoopState("prompt");
+    wrongLettersRef.current = 0; // 017/F4: wrong letters are counted per word
   }, [currentWord]);
+
+  /**
+   * 017/F4: the FIRST word in this scene that collects 2+ wrong letters records
+   * ONE failure event — two item misses, so F1's two-consecutive-misses rule
+   * takes the band down by exactly 1 — and then latches the scene flag.
+   *
+   * There is deliberately NO grace path (PRD-v2 §11 puts it out of scope): the
+   * tray always permits eventual success, so the kid is never stuck and is
+   * never auto-passed.
+   */
+  const handleWrongLetter = useCallback(() => {
+    if (sceneFailureRecordedRef.current) return; // one failure per scene, ever
+    wrongLettersRef.current += 1;
+    if (wrongLettersRef.current < 2) return; // a single slip stays free
+    sceneFailureRecordedRef.current = true;
+
+    const target = getNodesForWord(currentWord)[0] || "g_sh";
+    graph.update([target], 0);
+    graph.update([target], 0);
+    graph.recordItemBoundary();
+  }, [currentWord, graph]);
 
   const handleWordComplete = useCallback((word: string) => {
     // Grade (deterministic, R7.3)
@@ -227,6 +255,7 @@ export function FridgeScreen({ graph, onAdvance, sessionMissedWords, sessionPass
             key={trayKey}
             targetWord={currentWord}
             onWordComplete={handleWordComplete}
+            onWrongLetter={handleWrongLetter}
           />
         </div>
         {/* Sofía's hands (red sleeve cuffs) */}

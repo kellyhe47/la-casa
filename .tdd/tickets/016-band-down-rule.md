@@ -1,11 +1,11 @@
 ---
 id: 016
 title: "F1/F3 — 2 consecutive misses = −1 band; record boundaries on miss"
-status: pending
+status: green
 depends_on: [013]
 touches: [client/src/graph/SkillGraph.ts, client/src/graph/SkillGraph.test.ts, client/src/screens/LivingRoomScreen.tsx, client/src/screens/BedroomScreen.tsx]
-iterations: 0
-test_files: []
+iterations: 1
+test_files: [client/src/graph/SkillGraph.test.ts, client/src/screens/LivingRoomScreen.test.tsx, client/src/screens/BedroomScreen.test.tsx]
 branch: ""
 ---
 

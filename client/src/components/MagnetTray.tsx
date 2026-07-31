@@ -37,9 +37,13 @@ interface DragState {
 interface MagnetTrayProps {
   targetWord: string;
   onWordComplete: (word: string) => void;
+  /** 017/F4: fired whenever a placement is rejected (wrong letter, or a slot
+   *  that is already filled). The tray still only wobbles; the caller decides
+   *  whether the miss is worth recording. Optional — the tray works without it. */
+  onWrongLetter?: () => void;
 }
 
-export function MagnetTray({ targetWord, onWordComplete }: MagnetTrayProps) {
+export function MagnetTray({ targetWord, onWordComplete, onWrongLetter }: MagnetTrayProps) {
   const lower = targetWord.toLowerCase();
   const [availableLetters] = useState(() => shuffle(getLetters(lower)));
   const [slots, setSlots] = useState<SlotState[]>(() =>
@@ -79,8 +83,9 @@ export function MagnetTray({ targetWord, onWordComplete }: MagnetTrayProps) {
       setWobbling(trayIdx);
       setTimeout(() => setWobbling(null), 900);
       setSelectedTrayIdx(null);
+      onWrongLetter?.();
     }
-  }, [availableLetters, lower, slots, onWordComplete]);
+  }, [availableLetters, lower, slots, onWordComplete, onWrongLetter]);
 
   const handleMagnetTap = useCallback((trayIdx: number) => {
     if (placedFromTray.has(trayIdx)) return;
