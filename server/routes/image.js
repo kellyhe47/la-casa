@@ -1,13 +1,20 @@
+import {
+  apiKey,
+  callUpstream,
+  noteUpstreamFailure,
+  sendUpstreamFailure,
+} from '../upstream.js'
+
 export async function imageHandler(req, res) {
-  const { word, seed } = req.body
-  if (!process.env.OPENAI_API_KEY) {
-    return res.status(503).json({ error: 'stub' })
-  }
-  try {
-    const response = await fetch('https://api.openai.com/v1/images/generations', {
+  const { word } = req.body ?? {}
+
+  const result = await callUpstream({
+    provider: 'openai',
+    url: 'https://api.openai.com/v1/images/generations',
+    init: {
       method: 'POST',
       headers: {
-        Authorization: `Bearer ${process.env.OPENAI_API_KEY}`,
+        Authorization: `Bearer ${apiKey('openai')}`,
         'Content-Type': 'application/json',
       },
       body: JSON.stringify({
@@ -17,19 +24,28 @@ export async function imageHandler(req, res) {
         size: '1024x1024',
         quality: 'low',
       }),
-    })
-    if (!response.ok) {
-      return res.status(503).json({ error: 'stub' })
-    }
-    const data = await response.json()
-    const item = data.data?.[0]
-    // gpt-image-1 returns base64 (b64_json); DALL-E-style models return a url
-    const url = item?.url ?? (item?.b64_json ? `data:image/png;base64,${item.b64_json}` : null)
-    if (!url) {
-      return res.status(503).json({ error: 'stub' })
-    }
-    res.json({ url })
-  } catch (e) {
-    res.status(503).json({ error: 'stub' })
+    },
+  })
+  if (!result.ok) {
+    return sendUpstreamFailure(res, result.failure)
   }
+
+  const data = await result.response.json()
+  const item = data?.data?.[0]
+  // gpt-image-1 returns base64 (b64_json); DALL-E-style models return a url
+  const url = item?.url ?? (item?.b64_json ? `data:image/png;base64,${item.b64_json}` : null)
+  if (!url) {
+    // 2xx but the payload is unusable — still an upstream fault.
+    return sendUpstreamFailure(
+      res,
+      noteUpstreamFailure({
+        provider: 'openai',
+        status: result.response.status,
+        durationMs: result.durationMs,
+        body: 'image response contained neither url nor b64_json',
+      })
+    )
+  }
+
+  res.json({ url })
 }

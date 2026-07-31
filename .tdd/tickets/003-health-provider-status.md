@@ -1,11 +1,11 @@
 ---
 id: 003
 title: "A3 — /health reports per-provider key + last success/failure"
-status: pending
+status: green
 depends_on: [002]
 touches: [server/app.js, server/providerHealth.js, server/upstream.js]
-iterations: 0
-test_files: []
+iterations: 1
+test_files: [server/health.test.js]
 branch: ""
 ---
 

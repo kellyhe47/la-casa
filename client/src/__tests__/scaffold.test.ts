@@ -11,7 +11,15 @@ describe("AC2: GET /health", () => {
     const app = createApp();
     const res = await supertest(app).get("/health");
     expect(res.status).toBe(200);
-    expect(res.body).toEqual({ ok: true });
+    // PRD v2 §2 / A3: /health now also carries per-provider key + last
+    // success/failure. Light smoke assertion only — server/health.test.js owns
+    // the detail; this test's job is "the client can still reach the app".
+    expect(res.body.ok).toBe(true);
+    for (const provider of ["anthropic", "elevenlabs", "openai"]) {
+      expect(res.body.providers[provider]).toHaveProperty("keyPresent");
+      expect(res.body.providers[provider]).toHaveProperty("lastSuccess");
+      expect(res.body.providers[provider]).toHaveProperty("lastFailure");
+    }
   });
 });
 
@@ -29,7 +37,7 @@ describe("AC3: POST /generate stub when no API key", () => {
     const app = createApp();
     const res = await supertest(app).post("/generate").send({ beat: "test" });
     expect(res.status).toBe(503);
-    expect(res.body).toMatchObject({ error: "stub" });
+    expect(res.body).toMatchObject({ error: "not_configured", provider: "anthropic" });
     if (savedKey) process.env.ANTHROPIC_API_KEY = savedKey;
   });
 });
@@ -47,7 +55,7 @@ describe("AC4: POST /tts stub when no API key", () => {
     const app = createApp();
     const res = await supertest(app).post("/tts").send({ text: "hello", voiceId: "x" });
     expect(res.status).toBe(503);
-    expect(res.body).toMatchObject({ error: "stub" });
+    expect(res.body).toMatchObject({ error: "not_configured", provider: "elevenlabs" });
     if (savedKey) process.env.ELEVENLABS_API_KEY = savedKey;
   });
 });
@@ -65,7 +73,7 @@ describe("AC5: POST /image stub when no API key", () => {
     const app = createApp();
     const res = await supertest(app).post("/image").send({ word: "beans", seed: "abc" });
     expect(res.status).toBe(503);
-    expect(res.body).toMatchObject({ error: "stub" });
+    expect(res.body).toMatchObject({ error: "not_configured", provider: "openai" });
     if (savedKey) process.env.OPENAI_API_KEY = savedKey;
   });
 });

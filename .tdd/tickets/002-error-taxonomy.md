@@ -1,11 +1,11 @@
 ---
 id: 002
 title: "A1/A2 — three-way upstream error taxonomy + timed calls"
-status: pending
+status: green
 depends_on: [001]
 touches: [server/app.js, server/upstream.js, server/routes/generate.js, server/routes/image.js, server/routes/tts.js]
-iterations: 0
-test_files: []
+iterations: 1
+test_files: [server/routes.test.js]
 branch: ""
 ---
 
@@ -63,3 +63,9 @@ All three failure modes are tested **per route** (9 cases), with `fetch` mocked.
 _(test-writer fills in)_
 
 ## Attempt log
+
+- iter 1: implemented taxonomy via new `server/upstream.js` seam; generate.js converted
+  off @anthropic-ai/sdk to plain fetch. 67/67 server tests green. Regression gate caught
+  4 stale MVP-era assertions in `client/src/__tests__/scaffold.test.ts` pinning the
+  superseded `{error:'stub'}` / bare `{ok:true}` contract — routed to the test-writer as a
+  wrong-test fix, NOT charged to the implementer.
