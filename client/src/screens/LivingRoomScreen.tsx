@@ -386,33 +386,40 @@ export function LivingRoomScreen({ graph, onAdvance }: LivingRoomScreenProps) {
         <div style={{ position: "relative", width: "100%", aspectRatio: "1280 / 800" }}>
           <LivingRoomScene micHidden={panelHidden} />
           {showNotif && (
-            <button
-              type="button"
-              data-testid="phone-notification"
-              onClick={showPanel}
-              aria-label="Abuela — abrir chat"
-              style={{
-                position: "absolute",
-                left: "42.5%",
-                top: "68.25%",
-                width: "15.16%",
-                height: "8.75%",
-                padding: 0,
-                border: "none",
-                background: "transparent",
-                cursor: "pointer",
-                zIndex: 5,
-              }}
+            /* The banner shares the scene's coordinate system rather than
+               approximating it: same 1280×800 viewBox, same box, same
+               rotate(-4 640 700) as the hands/phone layer it sits on. Every
+               child keeps the mock's own absolute coordinates, so the banner is
+               pixel-identical to the design at any viewport width — there is no
+               scale factor left to drift. (A percentage-positioned box with its
+               own nested viewBox letterboxed the art ~10% and lost the centre.)
+               The layer is inert; only the banner group takes pointer events. */
+            <svg
+              data-testid="phone-notification-layer"
+              viewBox="0 0 1280 800"
+              width="100%"
+              height="100%"
+              style={{ position: "absolute", inset: 0, display: "block", pointerEvents: "none", zIndex: 5 }}
             >
-              {/* Design coords 544,546 194×70 — viewBox padded by the 6px
-                  border stroke so nothing clips at the banner's edge. */}
-              <svg
-                viewBox="540 542 202 78"
-                width="100%"
-                height="100%"
-                style={{ display: "block", overflow: "visible" }}
-              >
-                <g stroke="#6F4B35" strokeLinecap="round" strokeLinejoin="round" fill="none">
+              <g transform="rotate(-4 640 700)">
+                <g
+                  data-testid="phone-notification"
+                  role="button"
+                  tabIndex={0}
+                  aria-label="Abuela — abrir chat"
+                  onClick={showPanel}
+                  onKeyDown={(e) => {
+                    if (e.key === "Enter" || e.key === " " || e.key === "Spacebar") {
+                      e.preventDefault();
+                      showPanel();
+                    }
+                  }}
+                  style={{ pointerEvents: "auto", cursor: "pointer" }}
+                  stroke="#6F4B35"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  fill="none"
+                >
                   <rect x="544" y="546" width="194" height="70" rx="16" fill="#FBE2D3" strokeWidth="6" />
                   <rect x="556" y="558" width="46" height="46" rx="11" fill="#E8917A" strokeWidth="5" />
                   <circle cx="579" cy="578" r="9" fill="#D7AB87" strokeWidth="4" />
@@ -422,8 +429,8 @@ export function LivingRoomScreen({ graph, onAdvance }: LivingRoomScreenProps) {
                   <text x="712" y="574" textAnchor="end" fontFamily="'Baloo 2'" fontWeight="600" fontSize="12" fill="#B3402F" stroke="none">ahora</text>
                   <path d="M 614 588 h 100 M 614 600 h 64" strokeWidth="6" opacity="0.35" />
                 </g>
-              </svg>
-            </button>
+              </g>
+            </svg>
           )}
           {!panelHidden && (
             <button

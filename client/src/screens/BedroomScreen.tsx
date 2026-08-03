@@ -313,24 +313,17 @@ export function BedroomScreen({ graph, seed, onAdvance, independence, sessionPas
         </div>
       )}
 
-      {/* Book instrument — Sofía's hands + book */}
-      <div style={{ position: "absolute", bottom: 0, left: "50%", transform: "translateX(-50%)", width: "90%", maxWidth: 960 }}>
+      {/* Reading instrument. Deliberate deviation from the bedroom mock: the
+          design frames the sentence in an open book held by Sofía's hands, but
+          the app's plain card reads more clearly at this size, so the hand and
+          sleeve-cuff chrome is dropped and the card sits lower in the frame. */}
+      <div style={{ position: "absolute", bottom: "3%", left: "50%", transform: "translateX(-50%)", width: "90%", maxWidth: 960 }}>
         <BookInstrument
           sentence={currentSentence}
           onAttempt={handleMicClick}
           isListening={loopState === "listening"}
           independence={independence}
         />
-        {/* Sofía's hands holding the book */}
-        <div style={{ display: "flex", justifyContent: "space-between", padding: "0 60px", marginTop: -8 }}>
-          <div style={{ width: 90, height: 36, background: "#D7AB87", borderRadius: "0 0 28px 28px", border: "4px solid #6F4B35", boxShadow: "0 4px 0 #6F4B35" }} />
-          <div style={{ width: 90, height: 36, background: "#D7AB87", borderRadius: "0 0 28px 28px", border: "4px solid #6F4B35", boxShadow: "0 4px 0 #6F4B35" }} />
-        </div>
-        {/* Red sleeve cuffs */}
-        <div style={{ display: "flex", justifyContent: "space-between", padding: "0 20px", background: "#B3402F", height: 32 }}>
-          <div />
-          <div />
-        </div>
       </div>
 
       {/* "Buenas noches" exit button */}

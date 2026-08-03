@@ -183,12 +183,72 @@ describe("025 AC-A2: minimized phone shows only the notification banner", () => 
   it("is pinned to the design's phone-screen coordinates (544,546 194×70)", () => {
     renderRoom();
     minimize();
-    const banner = screen.getByTestId("phone-notification") as HTMLElement;
-    expect(banner.style.left).toBe("42.5%");
-    expect(banner.style.top).toBe("68.25%");
-    expect(banner.style.width).toBe("15.16%");
-    expect(banner.style.height).toBe("8.75%");
-    expect(banner.querySelector('rect[x="544"][y="546"][width="194"][height="70"]')).toBeTruthy();
+    const banner = screen.getByTestId("phone-notification");
+    expect(banner.querySelector('rect[x="544"][y="546"][width="194"][height="70"][rx="16"]')).toBeTruthy();
+  });
+});
+
+/* ------------------------------------------------------------------ *
+ * AC-A2 geometry — the banner must sit on the phone by CONSTRUCTION
+ *
+ * THE BUG THIS BLOCK EXISTS FOR: the banner used to be a percentage-positioned
+ * HTML box wrapping its own `viewBox="540 542 202 78"`. Two errors compounded:
+ * the inner viewBox's aspect (2.590) did not match the box's (2.771), so
+ * `xMidYMid meet` letterboxed and shrank the art ~10%; and the percentages were
+ * of the wrapper div, not of exactly 1280 design units. Measured in a browser:
+ * the banner came out 0.695 of the phone-screen width instead of 0.844, and
+ * ~3px off centre. The button's OWN bounding box was right, which is why a
+ * check on the button passed — so these assertions deliberately measure the
+ * rendered `rect`, and the frame it is rendered in.
+ * ------------------------------------------------------------------ */
+
+describe("025 AC-A2 geometry: the banner is centred on the phone screen", () => {
+  /** Both rects, in design units, read off the components' own attributes. */
+  function rects() {
+    renderRoom();
+    // the phone's glass, from LivingRoomScene itself
+    const glass = document.querySelector('rect[x="526"][y="500"]')!;
+    minimize();
+    const banner = screen.getByTestId("phone-notification").querySelector("rect")!;
+    const box = (el: Element) => {
+      const x = Number(el.getAttribute("x"));
+      const w = Number(el.getAttribute("width"));
+      return { x, w, cx: x + w / 2 };
+    };
+    return { glass: box(glass), banner: box(banner) };
+  }
+
+  it("spans 194/230 of the phone screen and shares its centre line", () => {
+    const { glass, banner } = rects();
+    expect(banner.w / glass.w).toBeCloseTo(194 / 230, 5); // 0.8435
+    expect(banner.cx).toBe(glass.cx); // 641 === 641
+  });
+
+  it("renders in the scene's own coordinate system, with no nested viewBox to letterbox it", () => {
+    renderRoom();
+    const sceneViewBox = document.querySelector("svg")!.getAttribute("viewBox");
+    minimize();
+    const banner = screen.getByTestId("phone-notification");
+    const layer = screen.getByTestId("phone-notification-layer");
+
+    // the overlay is the banner's ONLY svg ancestor, and it is 1:1 with the scene
+    expect(banner.closest("svg")).toBe(layer);
+    expect(layer.getAttribute("viewBox")).toBe("0 0 1280 800");
+    expect(layer.getAttribute("viewBox")).toBe(sceneViewBox);
+    expect(layer.getAttribute("width")).toBe("100%");
+    expect(layer.getAttribute("height")).toBe("100%");
+    // ...and it rides the same tilt as the phone it sits on
+    const phoneLayer = document.querySelector('[data-testid="phone-notification"]')!.parentElement!;
+    expect(phoneLayer.getAttribute("transform")).toBe("rotate(-4 640 700)");
+  });
+
+  it("leaves the rest of the scene interactive — only the banner takes clicks", () => {
+    renderRoom();
+    minimize();
+    const layer = screen.getByTestId("phone-notification-layer") as unknown as SVGElement;
+    const banner = screen.getByTestId("phone-notification") as unknown as SVGElement;
+    expect(layer.style.pointerEvents).toBe("none");
+    expect(banner.style.pointerEvents).toBe("auto");
   });
 });
 
@@ -197,12 +257,25 @@ describe("025 AC-A2: minimized phone shows only the notification banner", () => 
  * ------------------------------------------------------------------ */
 
 describe("025 AC-A3: tapping the banner restores the panel", () => {
-  it("the banner is a real button with an accessible name", () => {
+  it("the banner is a real, focusable control with an accessible name", () => {
     renderRoom();
     minimize();
     const banner = screen.getByTestId("phone-notification");
-    expect(banner.tagName).toBe("BUTTON");
+    expect(banner.getAttribute("role")).toBe("button");
+    expect(banner.getAttribute("tabindex")).toBe("0");
     expect(banner.getAttribute("aria-label")).toMatch(/abuela/i);
+    expect(screen.getByRole("button", { name: /abuela/i })).toBe(banner);
+  });
+
+  it("is keyboard-activatable — Enter and Space restore the panel", () => {
+    renderRoom();
+    startListening();
+    for (const key of ["Enter", " "]) {
+      minimize();
+      expect(screen.queryByTestId("chat-thread")).toBeNull();
+      fireEvent.keyDown(screen.getByTestId("phone-notification"), { key });
+      expect(screen.getByTestId("chat-thread")).toBeTruthy();
+    }
   });
 
   it("clicking it re-renders the chat panel and clears the banner", () => {
@@ -239,14 +312,14 @@ describe("025 AC-A3: tapping the banner restores the panel", () => {
  * ------------------------------------------------------------------ */
 
 describe("025 AC-A2/A4 regression: banner and mic never render together", () => {
-  /** The banner's box in the SVG's 1280×800 design space, read off the very
-   *  percentages the overlay is positioned with. */
+  /** The banner's box in the scene's 1280×800 design space — the overlay shares
+   *  that space, so the rect's own attributes are already in it. */
   function bannerBox() {
-    const el = screen.getByTestId("phone-notification") as HTMLElement;
-    const pct = (v: string) => parseFloat(v) / 100;
-    const left = pct(el.style.left) * 1280;
-    const top = pct(el.style.top) * 800;
-    return { left, top, right: left + pct(el.style.width) * 1280, bottom: top + pct(el.style.height) * 800 };
+    const rect = screen.getByTestId("phone-notification").querySelector("rect")!;
+    const n = (a: string) => Number(rect.getAttribute(a));
+    const left = n("x");
+    const top = n("y");
+    return { left, top, right: left + n("width"), bottom: top + n("height") };
   }
 
   /** The mic ring's bounding box, read off the scene's own circle. */
