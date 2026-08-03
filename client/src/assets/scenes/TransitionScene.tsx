@@ -88,10 +88,12 @@ export function TransitionScene() {
             <rect x="530" y="190" width="220" height="370" fill="url(#ts-warmLight)" />
             <ellipse cx="640" cy="375" rx="215" ry="300" fill="url(#ts-doorGlow)" />
           </g>
-          {/* Doorway frame — the single border around the opening. The jamb
-              paths that used to be stroked along these same edges are gone;
-              stacked with this rect's 18px stroke they read as one heavy band. */}
-          <rect x="500" y="160" width="280" height="420" rx="10" fill="none" strokeWidth="18" />
+          {/* Doorway border — the soft brown outline, and the only one. The
+              heavy 18px ink frame at 500,160 and the jamb paths stroked along
+              its edges are gone; together they read as one thick black band.
+              fill is none by design: this rect used to carry fill #FFFAF0 at
+              0.55 opacity, which sat over the light and washed the glow pale. */}
+          <rect x="530" y="190" width="220" height="370" rx="6" fill="none" strokeWidth="8" opacity="0.55" />
           {/* hanging light */}
           <line x1="640" y1="40" x2="640" y2="120" strokeWidth="4" />
           <ellipse cx="640" cy="150" rx="36" ry="28" fill="#FFDF9E" strokeWidth="6" />
