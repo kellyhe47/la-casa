@@ -301,7 +301,11 @@ export function FridgeScreen({ graph, onAdvance, independence, sessionMissedWord
         {/* NOTE: target word NOT shown — R4.4.1 */}
       </div>
 
-      {/* Magnet tray + Sofía's hands — bottom-center */}
+      {/* Magnet tray — bottom-center. Deliberate deviation from the fridge mock:
+          the design has Sofía's hands holding the tray, but the hand blocks and
+          their red sleeve-cuff bar read as a stray band under the letters, so
+          the tray sits flush to the bottom edge on its own. Matches the same
+          decision in the bedroom. */}
       <div style={{ position: "absolute", bottom: 0, left: "50%", transform: "translateX(-50%)", width: 520 }}>
         <div style={{ background: "#C98A54", borderRadius: "20px 20px 0 0", padding: 16, boxShadow: "0 -8px 32px rgba(0,0,0,0.4)" }}>
           <MagnetTray
@@ -310,11 +314,6 @@ export function FridgeScreen({ graph, onAdvance, independence, sessionMissedWord
             onWordComplete={handleWordComplete}
             onWrongLetter={handleWrongLetter}
           />
-        </div>
-        {/* Sofía's hands (red sleeve cuffs) */}
-        <div style={{ background: "#B3402F", height: 40, display: "flex", justifyContent: "space-between", padding: "0 40px", alignItems: "center" }}>
-          <div style={{ width: 80, height: 30, background: "#D7AB87", borderRadius: "0 0 24px 24px", border: "3px solid #6F4B35" }} />
-          <div style={{ width: 80, height: 30, background: "#D7AB87", borderRadius: "0 0 24px 24px", border: "3px solid #6F4B35" }} />
         </div>
       </div>
 
