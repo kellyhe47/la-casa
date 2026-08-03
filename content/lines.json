@@ -39,7 +39,7 @@
     "dad.fridge.prompt.default": {
       "spanish-first": "Escribe {word} en la nota para Mamá.",
       "bilingual": "Escribe {word} en la nota para Mamá. Spell {word} on the note for Mamá!",
-      "english-only": "Spell {word} on the note for Mamá — she loves your handwriting."
+      "english-only": "Spell {word} on the note for Mamá — she will appreciate it."
     },
     "dad.fridge.success": {
       "spanish-first": "¡Sí! {word}. ¡Muy bien, mija!",
