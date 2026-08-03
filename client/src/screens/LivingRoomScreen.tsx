@@ -351,9 +351,14 @@ export function LivingRoomScreen({ graph, onAdvance }: LivingRoomScreenProps) {
   const showPanel = useCallback(() => setPanelHidden(false), []);
 
   // Design state model (Living Room.dc.html): the banner stands in for the
-  // panel while minimized, and also announces a fresh note during `arrival`.
+  // panel. The mock also raises it in `arrival` — but the mock's `arrival` is
+  // the instant the note lands, a state where its `micShown` is false. This
+  // screen reuses `arrival` as the resting, mic-ready state, and the banner's
+  // box (546–616 in design coords) overlaps the mic ring (top 602): shown
+  // together they clip each other and split the tap target. No mock covers
+  // that pair, so the banner is the minimized case alone.
   const chatOpen = !panelHidden;
-  const showNotif = loopState === "arrival" || panelHidden;
+  const showNotif = panelHidden;
 
   const presence =
     loopState === "listening" || loopState === "thinking"

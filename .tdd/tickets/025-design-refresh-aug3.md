@@ -4,7 +4,7 @@ title: "Design refresh — Aug 3 handoff (art detail + chat minimize)"
 status: in-progress
 depends_on: []
 touches: [client/src/assets/scenes/LivingRoomScene.tsx, client/src/assets/scenes/FridgeScene.tsx, client/src/assets/scenes/BedroomScene.tsx, client/src/screens/LivingRoomScreen.tsx]
-iterations: 1
+iterations: 2
 test_files: [client/src/screens/livingRoomChatPanel.test.tsx]
 branch: ""
 ---

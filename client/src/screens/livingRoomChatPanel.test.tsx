@@ -98,8 +98,8 @@ function readSource(relative: string): string {
 const minimize = () => fireEvent.click(screen.getByTestId("chat-minimize"));
 const tapBanner = () => fireEvent.click(screen.getByTestId("phone-notification"));
 
-/** Put the screen into a non-`arrival` loop state so the banner is driven by
- *  `panelHidden` alone (in `arrival` the design shows it either way). */
+/** Put the screen into the `listening` loop state — the banner must behave the
+ *  same there as in the resting `arrival` state. */
 function startListening() {
   fireEvent.click(screen.getByTestId("mic-button"));
 }
@@ -217,13 +217,75 @@ describe("025 AC-A3: tapping the banner restores the panel", () => {
     expect(screen.queryByTestId("phone-notification")).toBeNull();
   });
 
-  it("keeps the banner up after restoring while a note is arriving", () => {
-    renderRoom(); // loopState starts at `arrival`
+  it("clears the banner on restore in `arrival` too — this screen's resting state", () => {
+    renderRoom(); // loopState starts at `arrival`, and stays there between turns
+    expect(screen.queryByTestId("phone-notification")).toBeNull(); // panel is open
     minimize();
     tapBanner();
     expect(screen.getByTestId("chat-thread")).toBeTruthy();
-    // design: showNotif = arrival || panelHidden
-    expect(screen.getByTestId("phone-notification")).toBeTruthy();
+    expect(screen.queryByTestId("phone-notification")).toBeNull();
+  });
+});
+
+/* ------------------------------------------------------------------ *
+ * REGRESSION — the banner and the mic must never share the phone glass
+ *
+ * The mock raises the banner in `arrival`, but ITS `arrival` is the instant
+ * the note lands, where `micShown` is false. This screen reuses `arrival` as
+ * the resting, mic-ready state, so copying the mock literally put a 194×70
+ * banner (bottom edge 616 in design coords) on top of a mic ring whose top
+ * edge is 602: the banner clipped the ring, and the mic button — which sits
+ * above it — ate the banner's bottom strip, leaving a dead tap zone.
+ * ------------------------------------------------------------------ */
+
+describe("025 AC-A2/A4 regression: banner and mic never render together", () => {
+  /** The banner's box in the SVG's 1280×800 design space, read off the very
+   *  percentages the overlay is positioned with. */
+  function bannerBox() {
+    const el = screen.getByTestId("phone-notification") as HTMLElement;
+    const pct = (v: string) => parseFloat(v) / 100;
+    const left = pct(el.style.left) * 1280;
+    const top = pct(el.style.top) * 800;
+    return { left, top, right: left + pct(el.style.width) * 1280, bottom: top + pct(el.style.height) * 800 };
+  }
+
+  /** The mic ring's bounding box, read off the scene's own circle. */
+  function micBox() {
+    const ring = document.querySelector('[data-testid="scene-mic-art"] circle')!;
+    const cx = Number(ring.getAttribute("cx"));
+    const cy = Number(ring.getAttribute("cy"));
+    const r = Number(ring.getAttribute("r"));
+    return { left: cx - r, top: cy - r, right: cx + r, bottom: cy + r };
+  }
+
+  it("their boxes intersect, so rendering both would clip and steal taps", () => {
+    renderRoom();
+    const mic = micBox(); // panel open: the mic is on the glass
+    minimize();
+    const banner = bannerBox(); // minimized: the banner is on the glass
+    const intersects =
+      banner.left < mic.right &&
+      banner.right > mic.left &&
+      banner.top < mic.bottom &&
+      banner.bottom > mic.top;
+    expect(intersects).toBe(true); // ...which is exactly why the next test matters
+  });
+
+  it("is never violated in any state this screen can reach", () => {
+    renderRoom();
+    // panel open + `arrival` (resting), panel open + `listening`, and minimized
+    for (const enter of [() => {}, startListening]) {
+      enter();
+      expect(screen.queryByTestId("phone-notification")).toBeNull();
+      expect(screen.getByTestId("mic-button")).toBeTruthy();
+
+      minimize();
+      expect(screen.getByTestId("phone-notification")).toBeTruthy();
+      expect(screen.queryByTestId("mic-button")).toBeNull();
+      expect(screen.queryByTestId("scene-mic-art")).toBeNull();
+
+      tapBanner();
+    }
   });
 });
 
@@ -279,12 +341,13 @@ describe("025 AC-A5: minimize is presentation only", () => {
     renderRoom();
     fetchMock.mockClear();
 
-    await act(async () => {
-      minimize();
-      tapBanner();
-      minimize();
-      tapBanner();
-    });
+    // one round trip at a time — each click has to land before the control it
+    // reveals can be found
+    minimize();
+    tapBanner();
+    minimize();
+    tapBanner();
+    await act(async () => {});
 
     const urls = fetchMock.mock.calls.map((c) => String(c[0]));
     expect(urls).not.toContain("/generate");
@@ -328,7 +391,10 @@ describe("025 B: living-room art port", () => {
   it("B1: warm mats, a desert landscape in the centre frame, and no Abuela portrait", () => {
     const { container } = render(<LivingRoomScene />);
     const svg = container.innerHTML;
-    expect(container.querySelectorAll('rect[fill="#EFDDC3"]').length).toBe(3); // three mats
+    // the design warms the left and right mats; the centre one keeps #FFFAF0
+    // because the desert rect covers it edge to edge
+    expect(container.querySelectorAll('rect[fill="#EFDDC3"]').length).toBe(2);
+    expect(container.querySelector('rect[x="628"][y="142"][rx="4"]')!.getAttribute("fill")).toBe("#FFFAF0");
     expect(svg).toContain("#F9D9A8"); // desert sand
     expect(container.querySelector('circle[cx="676"][cy="158"][fill="#F2A48B"]')).toBeTruthy(); // sun
     expect(svg).toContain("#D98E5F");

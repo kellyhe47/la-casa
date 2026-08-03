@@ -83,7 +83,7 @@ export function LivingRoomScene({ micHidden = false }: LivingRoomSceneProps = {}
             <circle cx="532.5" cy="177" r="2" fill="#3E2A20" stroke="none" /><circle cx="542" cy="177" r="2" fill="#3E2A20" stroke="none" />
             <path d="M 531 185 q 6 4 12 0 q -6 -3 -12 0 Z" fill="#2E211A" strokeWidth="3" />
             <rect x="614" y="128" width="92" height="112" rx="8" fill="#B07C4A" />
-            <rect x="628" y="142" width="64" height="84" rx="4" fill="#EFDDC3" strokeWidth="6" />
+            <rect x="628" y="142" width="64" height="84" rx="4" fill="#FFFAF0" strokeWidth="6" />
             {/* Desert landscape */}
             <rect x="628" y="142" width="64" height="84" fill="#F9D9A8" stroke="none" />
             <circle cx="676" cy="158" r="8" fill="#F2A48B" strokeWidth="5" />
