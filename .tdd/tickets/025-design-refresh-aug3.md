@@ -1,7 +1,7 @@
 ---
 id: 025
 title: "Design refresh — Aug 3 handoff (art detail + chat minimize)"
-status: in-progress
+status: green
 depends_on: []
 touches: [client/src/assets/scenes/LivingRoomScene.tsx, client/src/assets/scenes/FridgeScene.tsx, client/src/assets/scenes/BedroomScene.tsx, client/src/screens/LivingRoomScreen.tsx]
 iterations: 2
@@ -56,16 +56,17 @@ micShown  = <existing rule> && !hidden
 ### AC-A3 — tapping the banner restores
 - [ ] The banner is clickable and has an accessible name
 - [ ] Clicking it re-renders the chat panel
-- [ ] Clicking it removes the banner (unless `loopState === 'arrival'`)
+- [x] Clicking it removes the banner
+      _(amended after QA r2: the design's `arrival` has no mic at all (`micShown = !has('arrival',…)`), so banner-plus-mic was never a sanctioned frame. This app reuses `arrival` as the resting mic-ready state, so `showNotif` is `panelHidden` alone and the arrival exception cannot arise.)_
 
 ### AC-A4 — suppressed affordances while minimized
 - [ ] The mic button is not interactive/visible while minimized
-- [ ] Listening waveform and thinking indicator do not render while minimized
+- [~] Listening waveform and thinking indicator do not render while minimized — **VACUOUS**: this app renders neither indicator in any state.
 - [ ] The panel header (avatar + presence) does not render while minimized
 
 ### AC-A5 — scope guards
 - [ ] The panel defaults to OPEN — existing `AC14: chat thread component is present` still passes
-- [ ] Minimize is unavailable in `wait` (there is no panel yet)
+- [~] Minimize is unavailable in `wait` — **VACUOUS**: `wait` is in the `LoopState` union but never assigned; the screen mounts straight into `arrival`. Verified unreachable in QA r1 and r2.
 - [ ] Restoring preserves the existing message history — nothing is re-fetched, no `/generate` or `/tts` call is issued by minimize or restore
 - [ ] Minimizing mid-exchange does not interrupt audio or grading
 
@@ -74,7 +75,8 @@ micShown  = <existing rule> && !hidden
 ## B. Living Room — art (`LivingRoomScene.tsx`)
 
 ### AC-B1 — family photos redrawn
-- [ ] Photo mats change `#FFFAF0` → `#EFDDC3` on all three frames
+- [x] Photo mats change `#FFFAF0` → `#EFDDC3` on the **x486 and x760** frames only
+      _(corrected after QA r2: my original wording said all three, but the design diff leaves x628 at `#FFFAF0`. The design is the source of truth. Invisible either way — the desert rect covers that mat.)_
 - [ ] Left frame (x486): two shoulders — coral `#E8917A` and sage `#7FA07C` — with Mom (skin `#D7AB87`, eyes, blush, smile) and Dad (skin `#AC7552`, dark hair, open smile)
 - [ ] Centre frame (x628): Abuela portrait REPLACED by a desert landscape — sand `#F9D9A8`, sun `#F2A48B`, dune bands `#D98E5F`/`#E0A96D`, saguaro
 - [ ] Right frame (x760): baby — yellow shoulders `#F4C95D`, skin `#E4C29F`, hair tuft, blush, smile
@@ -142,3 +144,24 @@ micShown  = <existing rule> && !hidden
 _(test-writer fills in)_
 
 ## Attempt log
+
+- iter 1: ported all art + built chat minimize. 276/276. QA r1: 24/26 PASS, one
+  defect — banner/mic overlapped 19x164px in `arrival`; banner clipped the mic
+  ring and lost its bottom 19px of tap target to the higher-z mic button.
+- iter 2: `showNotif` narrowed to `panelHidden`; centre mat reverted to the
+  design's `#FFFAF0`; two tests added that derive the collision from the
+  components' own geometry. 278/278. QA r2: shippable, no blockers or majors.
+  Measured 315/315 banner probe points live, 0/24 mic points stolen.
+
+### Known-latent (recorded, not fixed)
+
+`chatOpen`/`hidden` no longer carry the design's `loopState !== 'wait'` guard,
+only `showNotif` was narrowed. Inert while `wait` is unreachable; would diverge
+from the design if that state were ever wired up. Deliberately not "fixed" —
+guarding an unreachable state is dead code.
+
+### Not verifiable in this environment
+
+AC-A5d's *audio* continuity: with dummy TTS keys no audio element is ever
+created, so "minimizing mid-exchange does not interrupt audio" cannot be
+observed. Grading continuity across a minimize was verified and passes.
