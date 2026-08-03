@@ -1,5 +1,11 @@
 
-export function LivingRoomScene() {
+interface LivingRoomSceneProps {
+  /** Chat minimized (Aug-3 design): the phone screen carries the Abuela
+   *  notification banner alone — the mic ring and glyph stand down. */
+  micHidden?: boolean;
+}
+
+export function LivingRoomScene({ micHidden = false }: LivingRoomSceneProps = {}) {
   return (
     <div style={{ width: '100%', position: 'relative' }}>
       <svg viewBox="0 0 1280 800" width="100%" height="auto" style={{ display: 'block' }}>
@@ -53,7 +59,6 @@ export function LivingRoomScene() {
           <path d="M 96 150 q 8 60 0 150 M 310 150 q -8 60 0 150" strokeWidth="6" opacity="0.6" />
           {/* papel picado string */}
           <path d="M 872 0 Q 874 28 880 46 Q 1080 120 1284 78" strokeWidth="6" />
-          <circle cx="880" cy="46" r="6" fill="#B07C4A" strokeWidth="5" />
           <g strokeWidth="6">
             <path d="M 916 62 h 52 v 30 l -9 8 -8 -8 -9 8 -8 -8 -9 8 -9 -8 Z" fill="#F2C066" />
             <path d="M 1006 84 h 52 v 30 l -9 8 -8 -8 -9 8 -8 -8 -9 8 -9 -8 Z" fill="#9DBBA4" />
@@ -64,26 +69,36 @@ export function LivingRoomScene() {
           {/* family photos */}
           <g strokeWidth="8">
             <rect x="470" y="104" width="104" height="128" rx="8" fill="#B07C4A" />
-            <rect x="486" y="120" width="72" height="96" rx="4" fill="#FFFAF0" strokeWidth="6" />
-            <circle cx="508" cy="164" r="14" fill="#D7AB87" strokeWidth="6" />
-            <path d="M 494 162 q 2 -20 14 -20 q 14 0 15 18 q -6 8 -14 -6 q -8 12 -15 8" fill="#3E2A20" strokeWidth="5" />
-            <circle cx="537" cy="168" r="13" fill="#AC7552" strokeWidth="6" />
-            <path d="M 525 162 q 4 -12 12 -12 q 10 0 12 12" fill="#2E211A" strokeWidth="5" />
-            <path d="M 529 176 q 8 5 16 0" strokeWidth="4" />
-            <path d="M 496 216 q 26 -22 52 0" fill="#E8917A" strokeWidth="6" />
+            <rect x="486" y="120" width="72" height="96" rx="4" fill="#EFDDC3" strokeWidth="6" />
+            {/* Mom & Dad */}
+            <path d="M 488 216 v -6 q 0 -22 19 -22 q 19 0 19 22 v 6 Z" fill="#E8917A" strokeWidth="5" />
+            <path d="M 518 216 v -4 q 0 -22 19 -22 q 19 0 19 22 v 4 Z" fill="#7FA07C" strokeWidth="5" />
+            <circle cx="507" cy="172" r="13" fill="#D7AB87" strokeWidth="5" />
+            <path d="M 494 170 q 0 -16 13 -16 q 13 0 13 16 q -5 3 -8 -7 q -9 9 -18 7" fill="#3E2A20" strokeWidth="4.5" />
+            <circle cx="502.5" cy="174" r="2" fill="#6F4B35" stroke="none" /><circle cx="512" cy="174" r="2" fill="#6F4B35" stroke="none" />
+            <circle cx="499" cy="179" r="2.4" fill="#E8917A" stroke="none" opacity="0.7" /><circle cx="515" cy="179" r="2.4" fill="#E8917A" stroke="none" opacity="0.7" />
+            <path d="M 504 181 q 3.5 3.5 7 0" strokeWidth="3" />
+            <circle cx="537" cy="176" r="13" fill="#AC7552" strokeWidth="5" />
+            <path d="M 525 173 q 1 -13 12 -13 q 11 0 12 13" fill="#2E211A" strokeWidth="4.5" />
+            <circle cx="532.5" cy="177" r="2" fill="#3E2A20" stroke="none" /><circle cx="542" cy="177" r="2" fill="#3E2A20" stroke="none" />
+            <path d="M 531 185 q 6 4 12 0 q -6 -3 -12 0 Z" fill="#2E211A" strokeWidth="3" />
             <rect x="614" y="128" width="92" height="112" rx="8" fill="#B07C4A" />
-            <rect x="628" y="142" width="64" height="84" rx="4" fill="#FFFAF0" strokeWidth="6" />
-            <circle cx="660" cy="186" r="15" fill="#D7AB87" strokeWidth="6" />
-            <circle cx="660" cy="166" r="8" fill="#CFC3B4" strokeWidth="5" />
-            <path d="M 650 184 h 8 m 6 0 h 8" strokeWidth="4" />
-            <circle cx="653" cy="184" r="5" fill="none" strokeWidth="3" /><circle cx="668" cy="184" r="5" fill="none" strokeWidth="3" />
+            <rect x="628" y="142" width="64" height="84" rx="4" fill="#EFDDC3" strokeWidth="6" />
+            {/* Desert landscape */}
+            <rect x="628" y="142" width="64" height="84" fill="#F9D9A8" stroke="none" />
+            <circle cx="676" cy="158" r="8" fill="#F2A48B" strokeWidth="5" />
+            <path d="M 628 204 h 64 v 22 h -64 Z" fill="#D98E5F" stroke="none" />
+            <path d="M 628 204 q 14 -22 30 -4 q 6 8 12 2 q 10 -12 22 2 v 24 h -64 Z" fill="#E0A96D" strokeWidth="5" />
+            <path d="M 646 226 v -14 m 0 4 q -7 0 -7 -8 m 7 11 q 7 -1 7 -9" fill="none" strokeWidth="4.5" />
             <rect x="744" y="110" width="100" height="120" rx="8" fill="#B07C4A" />
-            <rect x="760" y="126" width="68" height="88" rx="4" fill="#FFFAF0" strokeWidth="6" />
-            <circle cx="794" cy="176" r="17" fill="#D7AB87" strokeWidth="6" />
-            <path d="M 794 158 q 2 -8 8 -8" strokeWidth="4" />
-            <circle cx="788" cy="174" r="2.6" fill="#6F4B35" stroke="none" /><circle cx="801" cy="174" r="2.6" fill="#6F4B35" stroke="none" />
-            <circle cx="783" cy="182" r="3.5" fill="#E8917A" stroke="none" /><circle cx="806" cy="182" r="3.5" fill="#E8917A" stroke="none" />
-            <path d="M 789 186 q 5 5 10 0" strokeWidth="4" />
+            <rect x="760" y="126" width="68" height="88" rx="4" fill="#EFDDC3" strokeWidth="6" />
+            {/* Baby */}
+            <path d="M 776 214 v -4 q 0 -20 18 -20 q 18 0 18 20 v 4 Z" fill="#F4C95D" strokeWidth="5" />
+            <circle cx="794" cy="180" r="13" fill="#E4C29F" strokeWidth="5" />
+            <path d="M 794 167 q 1 -7 6 -8 q -5 -2 -9 3" fill="#3E2A20" strokeWidth="3.5" />
+            <circle cx="789.5" cy="178" r="2" fill="#6F4B35" stroke="none" /><circle cx="799" cy="178" r="2" fill="#6F4B35" stroke="none" />
+            <circle cx="785.5" cy="184" r="2.6" fill="#E8917A" stroke="none" /><circle cx="803" cy="184" r="2.6" fill="#E8917A" stroke="none" />
+            <path d="M 790 187 q 4 4 8 0" strokeWidth="3" />
           </g>
           {/* shelf */}
           <g strokeWidth="8">
@@ -211,10 +226,29 @@ export function LivingRoomScene() {
           <ellipse cx="318" cy="668" rx="56" ry="12" fill="#6F4B35" opacity="0.12" stroke="none" />
           <g transform="rotate(9 318 560)">
             <path d="M 318 640 q -46 0 -46 -46 q 0 -30 24 -38 q -12 -20 4 -34 q 16 -8 32 2 q 18 12 6 32 q 24 8 24 38 q 0 46 -44 46 Z" fill="#C98A54" strokeWidth="9" />
+            {/* rosette around the sound hole */}
             <circle cx="318" cy="580" r="14" fill="#5A4436" strokeWidth="6" />
+            <circle cx="318" cy="580" r="19" fill="none" stroke="#F2C066" strokeWidth="3" />
+            <circle cx="318" cy="580" r="23" fill="none" strokeWidth="2.5" opacity="0.6" />
+            {/* bridge with string pins */}
+            <rect x="300" y="612" width="36" height="10" rx="4" fill="#5A4436" strokeWidth="5" />
+            <circle cx="309" cy="617" r="1.6" fill="#F2C066" stroke="none" />
+            <circle cx="318" cy="617" r="1.6" fill="#F2C066" stroke="none" />
+            <circle cx="327" cy="617" r="1.6" fill="#F2C066" stroke="none" />
+            {/* waist highlight */}
+            <path d="M 284 560 q -6 24 4 44" fill="none" strokeWidth="3" opacity="0.35" />
+            <path d="M 352 560 q 6 24 -4 44" fill="none" strokeWidth="3" opacity="0.35" />
             <rect x="311" y="430" width="14" height="94" rx="6" fill="#8A5B36" strokeWidth="7" />
             <rect x="304" y="414" width="28" height="22" rx="6" fill="#5A4436" strokeWidth="7" />
-            <path d="M 315 452 v 118 M 321 452 v 118" strokeWidth="2.5" opacity="0.8" />
+            {/* tuning pegs */}
+            <circle cx="300" cy="420" r="3.5" fill="#F2C066" strokeWidth="3" />
+            <circle cx="300" cy="430" r="3.5" fill="#F2C066" strokeWidth="3" />
+            <circle cx="336" cy="420" r="3.5" fill="#F2C066" strokeWidth="3" />
+            <circle cx="336" cy="430" r="3.5" fill="#F2C066" strokeWidth="3" />
+            {/* strings down to the bridge */}
+            <path d="M 314 452 v 160 M 318 452 v 160 M 322 452 v 160" strokeWidth="2" opacity="0.8" />
+            {/* frets */}
+            <path d="M 311 466 h 14 M 311 482 h 14 M 311 500 h 14" strokeWidth="2.5" opacity="0.6" />
           </g>
         </g>
 
@@ -227,14 +261,22 @@ export function LivingRoomScene() {
           </g>
           <rect x="486" y="646" width="34" height="34" rx="7" fill="#9DBBA4" strokeWidth="7" transform="rotate(9 503 663)" />
           <text x="503" y="672" textAnchor="middle" fontFamily="'Baloo 2'" fontWeight="800" fontSize="22" fill="#6F4B35" stroke="none" transform="rotate(9 503 663)">a</text>
-          {/* baby sock on rug */}
-          <path d="M 872 700 q 18 -4 20 12 q 2 14 -14 16 q -20 2 -22 -12 q -2 -12 16 -16" fill="#B9AECF" strokeWidth="6" />
           {/* Abuela's chanclas */}
           <g transform="rotate(-6 940 742)">
+            {/* left chancla: flat foam sole + Y-thong strap */}
             <ellipse cx="922" cy="740" rx="20" ry="34" fill="#C98A54" strokeWidth="7" />
-            <path d="M 910 732 q 12 -14 24 0" strokeWidth="5" />
-            <ellipse cx="964" cy="746" rx="20" ry="34" fill="#C98A54" strokeWidth="7" transform="rotate(14 964 746)" />
-            <path d="M 954 740 q 12 -14 24 -2" strokeWidth="5" />
+            <ellipse cx="922" cy="740" rx="14" ry="27" fill="none" strokeWidth="3.5" opacity="0.4" />
+            <path d="M 908 734 q 14 -12 28 0" fill="none" stroke="#B3402F" strokeWidth="6" />
+            <path d="M 922 712 v 20" stroke="#B3402F" strokeWidth="6" />
+            <circle cx="922" cy="712" r="3" fill="#B3402F" strokeWidth="3" />
+            {/* right chancla */}
+            <g transform="rotate(14 964 746)">
+              <ellipse cx="964" cy="746" rx="20" ry="34" fill="#C98A54" strokeWidth="7" />
+              <ellipse cx="964" cy="746" rx="14" ry="27" fill="none" strokeWidth="3.5" opacity="0.4" />
+              <path d="M 950 740 q 14 -12 28 0" fill="none" stroke="#B3402F" strokeWidth="6" />
+              <path d="M 964 718 v 20" stroke="#B3402F" strokeWidth="6" />
+              <circle cx="964" cy="718" r="3" fill="#B3402F" strokeWidth="3" />
+            </g>
           </g>
           {/* coffee table */}
           <ellipse cx="326" cy="768" rx="130" ry="18" fill="#6F4B35" opacity="0.12" stroke="none" />
@@ -269,14 +311,20 @@ export function LivingRoomScene() {
         <g id="layer-hands" stroke="#6F4B35" strokeLinecap="round" strokeLinejoin="round" fill="none">
           <g transform="rotate(-4 640 700)">
             <path d="M 468 812 q -4 -52 34 -74 l 70 34 q -18 44 -12 52 Z" fill="#B3402F" strokeWidth="10" />
+            {/* sweater cuff knit lines */}
+            <path d="M 497 760 q 26 -18 58 -5 M 487 776 q 28 -20 64 -4" strokeWidth="4" opacity="0.45" />
             <rect x="512" y="486" width="258" height="330" rx="30" fill="#5A4436" strokeWidth="10" />
             {/* Flat white screen — no shading overlays */}
             <rect x="526" y="500" width="230" height="302" rx="20" fill="#FFFAF0" strokeWidth="7" />
             {/* Mic ring drawn under React button for visual continuity */}
-            <circle cx="641" cy="680" r="78" fill="#E0674A" strokeWidth="10" />
-            <rect x="623" y="632" width="36" height="60" rx="18" fill="#FFFAF0" strokeWidth="3" />
-            <path d="M 605 676 q 0 40 36 40 q 36 0 36 -40 M 641 716 v 22 M 618 738 h 46" strokeWidth="14" stroke="#6F4B35" />
-            <path d="M 605 676 q 0 40 36 40 q 36 0 36 -40 M 641 716 v 22 M 618 738 h 46" strokeWidth="8" stroke="#FFFAF0" />
+            {!micHidden && (
+              <g data-testid="scene-mic-art">
+                <circle cx="641" cy="680" r="78" fill="#E0674A" strokeWidth="10" />
+                <rect x="623" y="632" width="36" height="60" rx="18" fill="#FFFAF0" strokeWidth="3" />
+                <path d="M 605 676 q 0 40 36 40 q 36 0 36 -40 M 641 716 v 22 M 618 738 h 46" strokeWidth="14" stroke="#6F4B35" />
+                <path d="M 605 676 q 0 40 36 40 q 36 0 36 -40 M 641 716 v 22 M 618 738 h 46" strokeWidth="8" stroke="#FFFAF0" />
+              </g>
+            )}
             <path d="M 774 812 q 10 -60 -18 -84 q -30 -12 -42 16 q -8 34 14 68 Z" fill="#D7AB87" strokeWidth="10" />
             <path d="M 742 742 q -18 -4 -20 18 q 0 20 22 26" fill="#D7AB87" strokeWidth="8" />
             <path d="M 512 640 q -26 -4 -26 20 q 2 20 28 18 M 512 692 q -30 -4 -28 20 q 2 20 30 16 M 514 742 q -28 -2 -26 20 q 4 18 28 14" fill="#D7AB87" strokeWidth="9" />

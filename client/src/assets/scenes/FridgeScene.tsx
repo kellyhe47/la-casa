@@ -46,6 +46,26 @@ export function FridgeScene() {
           <path d="M 1140 112 h 44 v 490 h -44 Z" fill="#6F4B35" opacity="0.22" stroke="none" />
           <path d="M 1184 112 h 30 v 490 h -30 Z" fill="#6F4B35" opacity="0.1" stroke="none" />
           <path d="M 1140 602 V 112 M 1140 112 H 1290" strokeWidth="10" />
+          {/* hanging wooden utensils on a rail, wall right of fridge */}
+          <g transform="translate(-25 62)">
+            <path d="M 975 128 h 130" strokeWidth="7" />
+            <circle cx="975" cy="128" r="5" fill="#C98A54" strokeWidth="4.5" />
+            <circle cx="1105" cy="128" r="5" fill="#C98A54" strokeWidth="4.5" />
+            {/* wooden spoon */}
+            <path d="M 1000 128 v 14" strokeWidth="4" />
+            <path d="M 1000 142 q -2 8 2 44 q 2 10 -2 12" fill="#C98A54" strokeWidth="5" />
+            <ellipse cx="1000" cy="212" rx="11" ry="16" fill="#C98A54" strokeWidth="5.5" />
+            <ellipse cx="1000" cy="212" rx="5" ry="9" fill="none" strokeWidth="3" opacity="0.5" />
+            {/* molinillo (hot-chocolate whisk) */}
+            <path d="M 1040 128 v 14" strokeWidth="4" />
+            <path d="M 1038 142 h 4 l 2 40 h -8 Z" fill="#C98A54" strokeWidth="5" />
+            <ellipse cx="1040" cy="196" rx="10" ry="13" fill="#8A5B36" strokeWidth="5.5" />
+            <path d="M 1032 190 h 16 M 1032 200 h 16" strokeWidth="2.5" opacity="0.6" />
+            {/* flat spatula */}
+            <path d="M 1080 128 v 14" strokeWidth="4" />
+            <path d="M 1078 142 h 4 l 2 34 h -8 Z" fill="#C98A54" strokeWidth="5" />
+            <path d="M 1068 176 h 24 q 3 0 3 8 l -3 22 q -12 5 -24 0 l -3 -22 q 0 -8 3 -8" fill="#C98A54" strokeWidth="5.5" />
+          </g>
           {/* window with papel-picado edge, left */}
           <rect x="60" y="110" width="210" height="170" rx="12" fill="#3E4270" strokeWidth="9" />
           <path d="M 165 110 v 170 M 60 195 h 210" strokeWidth="7" />
@@ -65,10 +85,15 @@ export function FridgeScene() {
             <rect x="404" y="290" width="22" height="150" rx="10" fill="#C98A54" strokeWidth="7" />
             {/* freezer-door clutter */}
             <g transform="rotate(-4 585 155)">
-              <rect x="540" y="110" width="90" height="74" rx="8" fill="#FFFAF0" strokeWidth="6" />
-              <circle cx="570" cy="140" r="12" fill="#D7AB87" strokeWidth="4.5" />
-              <circle cx="600" cy="142" r="9" fill="#E4C29F" strokeWidth="4.5" />
-              <path d="M 556 168 q 29 10 58 0" strokeWidth="4" />
+              {/* Sofía's crayon drawing: wobbly house, sun, scribble grass */}
+              <rect x="540" y="110" width="90" height="74" rx="3" fill="#FBEDD2" strokeWidth="6" />
+              <path d="M 544 120 q 20 -6 40 0 t 42 0" stroke="#F6D992" strokeWidth="8" opacity="0.5" />
+              <path d="M 556 148 l 15 -13 l 16 12 l -1 24 l -29 1 Z" fill="none" stroke="#E0674A" strokeWidth="3.5" />
+              <path d="M 553 149 l 18 -17 l 19 16" fill="none" stroke="#B3402F" strokeWidth="3.5" />
+              <rect x="566" y="158" width="8" height="13" fill="none" stroke="#F2C066" strokeWidth="3" />
+              <circle cx="610" cy="130" r="7" fill="none" stroke="#F2C066" strokeWidth="3.5" />
+              <path d="M 610 120 v -3 M 610 140 v 3 M 600 130 h -3 M 620 130 h 3 M 603 123 l -2 -2 M 617 137 l 2 2 M 617 123 l 2 -2 M 603 137 l -2 2" stroke="#F2C066" strokeWidth="2.5" />
+              <path d="M 548 176 q 4 -7 7 0 q 4 -7 7 0 q 4 -7 7 0 M 600 176 q 4 -7 7 0 q 4 -7 7 0 q 4 -7 7 0" fill="none" stroke="#7FA05C" strokeWidth="3" />
               <circle cx="585" cy="112" r="7" fill="#E0674A" strokeWidth="4.5" />
             </g>
             <g transform="rotate(5 730 150)">

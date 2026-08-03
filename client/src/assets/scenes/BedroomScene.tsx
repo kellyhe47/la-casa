@@ -93,8 +93,10 @@ export function BedroomScene() {
           <rect x="166" y="492" width="108" height="30" rx="8" fill="#C98A54" strokeWidth="6" />
           <circle cx="220" cy="507" r="6" fill="#F2C066" strokeWidth="4" />
           <path d="M 192 368 h 56 l 14 44 h -84 Z" fill="#F6E3B8" strokeWidth="7" />
-          <path d="M 220 412 v 44" strokeWidth="6" />
-          <path d="M 220 456 l -26 14 h 52 Z" fill="#8A5B36" strokeWidth="7" />
+          <path d="M 220 412 v 36" strokeWidth="6" />
+          <path d="M 212 420 h 16" strokeWidth="5" />
+          <path d="M 206 448 q 14 -8 28 0 l 6 12 q -20 -7 -40 0 Z" fill="#C98A54" strokeWidth="6" />
+          <rect x="192" y="460" width="56" height="10" rx="5" fill="#8A5B36" strokeWidth="6" />
           {/* baby bottle on nightstand */}
           <rect x="264" y="438" width="22" height="34" rx="8" fill="#FDF3E3" strokeWidth="5" />
           <path d="M 268 438 q 7 -10 14 0" fill="#E8917A" strokeWidth="5" />

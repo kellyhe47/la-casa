@@ -94,3 +94,9 @@ No external images. Everything is inline SVG (exportable per layer). Font: Baloo
 - `support.js` — mock runtime (reference only; ignore for production)
 
 Repo context (not in this bundle): `nerdyv2/PRD.md`, `nerdyv2/CONTEXT.md`.
+
+
+## Update — Aug 3, 2026
+- Living Room: family wall photos redrawn (Mom/Dad/Abuela→desert landscape/baby, warm sand backdrops); guitar detailed (rosette, bridge+pins, strings, frets, tuning pegs); chanclas with Y-thong straps; sweater cuff knit lines; bedroom lamp base turned-wood detail.
+- Living Room: chat panel can be minimized (– button in header). When minimized, the phone screen shows ONLY the Abuela notification banner; tapping it restores the panel. Mic/waves/thinking hide while minimized.
+- Fridge: freezer photo is now Sofía's crayon drawing (cream paper, no stark white); hanging utensil rail (spoon, molinillo, spatula) centered between fridge and door.

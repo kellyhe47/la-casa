@@ -99,6 +99,13 @@ export function LivingRoomScreen({ graph, onAdvance }: LivingRoomScreenProps) {
   const [itemCompleted, setItemCompleted] = useState(false);
   const [isExitDimmed, setIsExitDimmed] = useState(true);
   const [micActive, setMicActive] = useState(false);
+  // Aug-3 design: the chat panel can be minimized to the phone's notification
+  // banner. Purely presentational — messages, audio and grading all live on
+  // this screen, so hiding the panel never touches the exchange in flight.
+  const [panelHidden, setPanelHidden] = useState(false);
+  // Once the panel has been minimized, the entrance choreography is spent —
+  // restoring must show it immediately, not replay the 1.8s delayed rise.
+  const [panelEntranceSpent, setPanelEntranceSpent] = useState(false);
   // Count of in-flight API calls (image + TTS) — typing dots show while > 0
   const [apiPending, setApiPending] = useState(0);
   const beginLoad = useCallback(() => setApiPending((c) => c + 1), []);
@@ -337,6 +344,17 @@ export function LivingRoomScreen({ graph, onAdvance }: LivingRoomScreenProps) {
     setTimeout(onAdvance, 600);
   }, [itemCompleted, isExitDimmed, addMessage, playVoiceNote, onAdvance]);
 
+  const hidePanel = useCallback(() => {
+    setPanelHidden(true);
+    setPanelEntranceSpent(true);
+  }, []);
+  const showPanel = useCallback(() => setPanelHidden(false), []);
+
+  // Design state model (Living Room.dc.html): the banner stands in for the
+  // panel while minimized, and also announces a fresh note during `arrival`.
+  const chatOpen = !panelHidden;
+  const showNotif = loopState === "arrival" || panelHidden;
+
   const presence =
     loopState === "listening" || loopState === "thinking"
       ? "escuchando…"
@@ -361,38 +379,84 @@ export function LivingRoomScreen({ graph, onAdvance }: LivingRoomScreenProps) {
           locked to the SVG's 1280×800 coordinate space (ring at 640,680 r78). */}
       <div style={{ position: "absolute", inset: 0 }}>
         <div style={{ position: "relative", width: "100%", aspectRatio: "1280 / 800" }}>
-          <LivingRoomScene />
-          <button
-            data-testid="mic-button"
-            onClick={handleMicClick}
-            aria-label="Micrófono"
-            style={{
-              position: "absolute",
-              left: "50%",
-              top: "85%",
-              transform: "translate(-50%, -50%)",
-              width: "12.2%",
-              aspectRatio: "1 / 1",
-              borderRadius: "50%",
-              border: "none",
-              background: micActive ? "rgba(176,64,47,0.35)" : "transparent",
-              cursor: "pointer",
-              zIndex: 6,
-              animation: !micActive && loopState === "arrival" ? "mic-pulse 1.4s ease-in-out infinite" : "none",
-            }}
-          />
+          <LivingRoomScene micHidden={panelHidden} />
+          {showNotif && (
+            <button
+              type="button"
+              data-testid="phone-notification"
+              onClick={showPanel}
+              aria-label="Abuela — abrir chat"
+              style={{
+                position: "absolute",
+                left: "42.5%",
+                top: "68.25%",
+                width: "15.16%",
+                height: "8.75%",
+                padding: 0,
+                border: "none",
+                background: "transparent",
+                cursor: "pointer",
+                zIndex: 5,
+              }}
+            >
+              {/* Design coords 544,546 194×70 — viewBox padded by the 6px
+                  border stroke so nothing clips at the banner's edge. */}
+              <svg
+                viewBox="540 542 202 78"
+                width="100%"
+                height="100%"
+                style={{ display: "block", overflow: "visible" }}
+              >
+                <g stroke="#6F4B35" strokeLinecap="round" strokeLinejoin="round" fill="none">
+                  <rect x="544" y="546" width="194" height="70" rx="16" fill="#FBE2D3" strokeWidth="6" />
+                  <rect x="556" y="558" width="46" height="46" rx="11" fill="#E8917A" strokeWidth="5" />
+                  <circle cx="579" cy="578" r="9" fill="#D7AB87" strokeWidth="4" />
+                  <path d="M 579 562 q 5 -1 7 3 q 6 1 5 7 q 3 4 -1 7 l -22 0 q -4 -3 -1 -7 q -1 -6 5 -7 q 2 -4 7 -3" fill="#CFC3B4" strokeWidth="3.5" />
+                  <path d="M 574 580 q 2 -2.5 4 0 M 582 580 q 2 -2.5 4 0" strokeWidth="2.2" />
+                  <text x="614" y="576" fontFamily="'Baloo 2'" fontWeight="800" fontSize="17" fill="#6F4B35" stroke="none">Abuela</text>
+                  <text x="712" y="574" textAnchor="end" fontFamily="'Baloo 2'" fontWeight="600" fontSize="12" fill="#B3402F" stroke="none">ahora</text>
+                  <path d="M 614 588 h 100 M 614 600 h 64" strokeWidth="6" opacity="0.35" />
+                </g>
+              </svg>
+            </button>
+          )}
+          {!panelHidden && (
+            <button
+              data-testid="mic-button"
+              onClick={handleMicClick}
+              aria-label="Micrófono"
+              style={{
+                position: "absolute",
+                left: "50%",
+                top: "85%",
+                transform: "translate(-50%, -50%)",
+                width: "12.2%",
+                aspectRatio: "1 / 1",
+                borderRadius: "50%",
+                border: "none",
+                background: micActive ? "rgba(176,64,47,0.35)" : "transparent",
+                cursor: "pointer",
+                zIndex: 6,
+                animation: !micActive && loopState === "arrival" ? "mic-pulse 1.4s ease-in-out infinite" : "none",
+              }}
+            />
+          )}
         </div>
       </div>
 
       {/* Chat overlay — design chrome */}
+      {chatOpen && (
       <div
+        data-testid="chat-panel"
         style={{
           position: "absolute",
           top: 48,
           right: 20,
           width: 368,
           height: "calc(100% - 180px)",
-          animation: `panel-enter ${PANEL_ENTER_DURATION_MS}ms ease-out ${PANEL_ENTER_DELAY_MS}ms both`,
+          animation: panelEntranceSpent
+            ? "none"
+            : `panel-enter ${PANEL_ENTER_DURATION_MS}ms ease-out ${PANEL_ENTER_DELAY_MS}ms both`,
           display: "flex",
           flexDirection: "column",
           boxSizing: "border-box",
@@ -417,6 +481,28 @@ export function LivingRoomScreen({ graph, onAdvance }: LivingRoomScreenProps) {
             <div style={{ fontWeight: 800, fontSize: 22, color: "#6F4B35", lineHeight: 1 }}>Abuela</div>
             <div style={{ fontWeight: 600, fontSize: 15, color: "#B3402F" }}>{presence}</div>
           </div>
+          <button
+            type="button"
+            data-testid="chat-minimize"
+            onClick={hidePanel}
+            aria-label="Ocultar chat"
+            style={{
+              flex: "none",
+              width: 38,
+              height: 38,
+              borderRadius: "50%",
+              background: "#FBE2D3",
+              border: "4px solid #6F4B35",
+              cursor: "pointer",
+              display: "grid",
+              placeItems: "center",
+              padding: 0,
+            }}
+          >
+            <svg viewBox="0 0 20 20" width="16" height="16">
+              <path d="M 4 10 h 12" fill="none" stroke="#6F4B35" strokeWidth="3.5" strokeLinecap="round" />
+            </svg>
+          </button>
         </div>
 
         <ChatThread
@@ -444,6 +530,7 @@ export function LivingRoomScreen({ graph, onAdvance }: LivingRoomScreenProps) {
           </svg>
         </div>
       </div>
+      )}
 
       {itemCompleted && (
         <button
