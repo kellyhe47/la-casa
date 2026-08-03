@@ -22,11 +22,17 @@ export function TransitionScene() {
             <stop offset="0" stopColor="#FFF6D8" stopOpacity="0.95" />
             <stop offset="1" stopColor="#F2C066" stopOpacity="0.55" />
           </linearGradient>
-          <radialGradient id="ts-doorGlow" cx="0.5" cy="0.45" r="0.55">
-            <stop offset="0" stopColor="#FFFAF0" stopOpacity="0.9" />
-            <stop offset="0.5" stopColor="#FFDF9E" stopOpacity="0.45" />
-            <stop offset="1" stopColor="#E8917A" stopOpacity="0" />
+          <radialGradient id="ts-doorGlow" cx="0.5" cy="0.45" r="0.72">
+            <stop offset="0" stopColor="#FFFAF0" stopOpacity="0.95" />
+            <stop offset="0.7" stopColor="#FFDF9E" stopOpacity="0.6" />
+            <stop offset="1" stopColor="#F2C066" stopOpacity="0.35" />
           </radialGradient>
+          {/* The doorway opening. The light is clipped to this so it can never
+              spill onto the corridor walls, and is sized to overfill it so the
+              gradient's fade happens outside the clip and the corners stay lit. */}
+          <clipPath id="ts-doorClip">
+            <rect x="530" y="190" width="220" height="370" rx="6" />
+          </clipPath>
         </defs>
 
         <style>{`
@@ -61,9 +67,6 @@ export function TransitionScene() {
           <rect x="0" y="0" width="1280" height="800" fill="#FBE2D3" />
           <rect x="0" y="560" width="1280" height="240" fill="#E2AE81" />
           <path d="M0 560 H1280" stroke="#6F4B35" strokeWidth="8" fill="none" />
-          {/* far door opening with warm light */}
-          <rect x="520" y="180" width="240" height="380" rx="8" fill="url(#ts-warmLight)" />
-          <ellipse cx="640" cy="360" rx="200" ry="220" fill="url(#ts-doorGlow)" />
           {/* ceiling beams */}
           <path d="M80 80 H1200 M200 40 H1080" stroke="#C98A54" strokeWidth="10" opacity="0.5" fill="none" />
         </g>
@@ -77,12 +80,18 @@ export function TransitionScene() {
           {/* floor runner */}
           <path d="M420 620 L860 620 L1100 800 L180 800 Z" fill="#C98A54" strokeWidth="6" opacity="0.85" />
           <path d="M520 620 L760 620 L900 800 L380 800 Z" fill="#E8917A" strokeWidth="4" opacity="0.7" />
-          {/* doorway frame */}
+          {/* Doorway light. Lives in this layer, not the background one: the two
+              layers animate on different transforms, so light parented to the
+              background drifted off the door during the 2.2s push. Clipped to
+              the opening, so it fills the doorway edge to edge and stops there. */}
+          <g clipPath="url(#ts-doorClip)" stroke="none">
+            <rect x="530" y="190" width="220" height="370" fill="url(#ts-warmLight)" />
+            <ellipse cx="640" cy="375" rx="215" ry="300" fill="url(#ts-doorGlow)" />
+          </g>
+          {/* Doorway frame — the single border around the opening. The jamb
+              paths that used to be stroked along these same edges are gone;
+              stacked with this rect's 18px stroke they read as one heavy band. */}
           <rect x="500" y="160" width="280" height="420" rx="10" fill="none" strokeWidth="18" />
-          <rect x="530" y="190" width="220" height="370" rx="6" fill="#FFFAF0" strokeWidth="8" opacity="0.55" />
-          {/* door jamb details */}
-          <path d="M500 160 V580 M780 160 V580" strokeWidth="12" />
-          <path d="M500 160 H780" strokeWidth="14" />
           {/* hanging light */}
           <line x1="640" y1="40" x2="640" y2="120" strokeWidth="4" />
           <ellipse cx="640" cy="150" rx="36" ry="28" fill="#FFDF9E" strokeWidth="6" />
