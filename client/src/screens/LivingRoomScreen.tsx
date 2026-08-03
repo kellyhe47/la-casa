@@ -169,7 +169,12 @@ export function LivingRoomScreen({ graph, onAdvance }: LivingRoomScreenProps) {
 
       if (result.pass) {
         graph.update(nodeIds, 1);
-        appStore.getState().commitItemBoundary(graph);
+        appStore.getState().commitItemBoundary(graph, {
+          word: currentWord,
+          nodeIds,
+          result: 1,
+          screen: "living-room",
+        });
         appStore.getState().recordWordResult(currentWord, 1);
         setItemCompleted(true);
         setIsExitDimmed(false);
@@ -211,7 +216,12 @@ export function LivingRoomScreen({ graph, onAdvance }: LivingRoomScreenProps) {
         // here, not only on pass/grace, or two consecutive misses can never
         // cost a band. Exactly one boundary per item: the grace branch below
         // no longer records its own.
-        appStore.getState().commitItemBoundary(graph);
+        appStore.getState().commitItemBoundary(graph, {
+          word: currentWord,
+          nodeIds,
+          result: 0,
+          screen: "living-room",
+        });
 
         // Show what was heard as Sofía's bubble so the correction has context
         const heardWord = transcript.trim().toLowerCase();

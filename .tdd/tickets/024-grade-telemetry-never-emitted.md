@@ -1,10 +1,10 @@
 ---
 id: 024
 title: "No grade events are ever emitted — learning signal chart is empty by construction"
-status: tests-written
+status: green
 depends_on: [012, 019, 022]
 touches: [client/src/state/appStore.ts, client/src/screens/LivingRoomScreen.tsx, client/src/screens/FridgeScreen.tsx, client/src/screens/BedroomScreen.tsx]
-iterations: 0
+iterations: 1
 test_files: [client/src/state/gradeTelemetry.test.tsx]
 branch: ""
 ---

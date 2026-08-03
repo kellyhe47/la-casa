@@ -1,10 +1,10 @@
 ---
 id: 023
 title: "Dad's fridge audio overlaps instead of playing sequentially"
-status: tests-written
+status: green
 depends_on: [018]
 touches: [client/src/screens/FridgeScreen.tsx]
-iterations: 0
+iterations: 1
 test_files: [client/src/screens/fridgeAudioSequencing.test.tsx]
 branch: ""
 ---

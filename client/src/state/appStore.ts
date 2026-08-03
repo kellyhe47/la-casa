@@ -5,7 +5,27 @@ import { SCREEN_ORDER } from "./types";
 import demoState from "../../../content/demo-state.json";
 import type { GraphNode } from "../graph/types";
 import { saveLearnerState } from "./saveState";
+import { emitEvent } from "../pipeline/telemetry";
 import { apiHeaders, getLearnerId, resetLearnerId } from "./learnerId";
+
+/** 024/C3: the rooms a graded item can close in. A subset of `Screen` — the
+ *  title and off-ramp beats never grade anything — so `/debug/metrics` can
+ *  bucket every `grade` row by a stable, known value. */
+export type GradeScreen = Extract<Screen, "living-room" | "fridge" | "bedroom">;
+
+/** 024/C3 + PRD §4: what a screen knows about the item it just closed. The
+ *  band pair is NOT here — only `commitItemBoundary` can straddle the boundary,
+ *  so it reads the band itself, before and after. */
+export interface ItemGrade {
+  word: string;
+  nodeIds: string[];
+  /** NUMERIC, never a string: `server/metrics.js` counts `Number(result) === 1`. */
+  result: 0 | 1;
+  screen: GradeScreen;
+  /** `grade()` returns only `{pass, matchedWord}` today, so this is normally
+   *  absent; the field stays on the wire for when a score exists. */
+  similarity?: number | null;
+}
 
 /** The wire shape of `GET /state/:id`. `independence` rides both on the graph
  *  (021's `toJSON()`) and at the top level (E4's save envelope). */
@@ -50,8 +70,14 @@ export interface AppState {
    *
    *  Takes the graph EXPLICITLY: screens receive it as a prop and are rendered
    *  standalone in tests, where the store singleton's `graph` is null. Reading
-   *  `get().graph` here would silently no-op. */
-  commitItemBoundary: (graph: SkillGraph) => void;
+   *  `get().graph` here would silently no-op.
+   *
+   *  024/C3: this is also the ONE place an item closes, so it is the only place
+   *  a `grade` event can hang off without drifting from the boundary. Screens
+   *  pass what they already know; the band pair is read here, straddling
+   *  `recordItemBoundary()`. `grade` is OPTIONAL — a boundary with no grade
+   *  info still saves, it just emits nothing. Exactly one event per call. */
+  commitItemBoundary: (graph: SkillGraph, grade?: ItemGrade) => void;
   /** Track pass/miss word lists only — for screens that update the graph themselves */
   recordWordResult: (word: string, result: 0 | 1) => void;
   setDebugOpen: (open: boolean) => void;
@@ -152,12 +178,28 @@ export function createAppStore() {
       }
     },
 
-    commitItemBoundary(graph: SkillGraph) {
+    commitItemBoundary(graph: SkillGraph, grade?: ItemGrade) {
       if (!graph) return;
+      // 024/C3: the band is sampled on BOTH sides of the tick — the whole point
+      // of the Learning-signal chart is watching scaffolding come off.
+      const bandBefore = graph.independence();
       graph.recordItemBoundary();
+      const bandAfter = graph.independence();
       // The save comes AFTER the boundary so the written band is the one the
       // kid is actually playing at, not the previous item's.
       saveLearnerState(graph);
+      if (!grade) return;
+      // Fire-and-forget (emitEvent swallows everything): telemetry is never
+      // worth interrupting gameplay for.
+      emitEvent("grade", {
+        word: grade.word,
+        node_ids: grade.nodeIds,
+        result: grade.result,
+        similarity: grade.similarity ?? null,
+        band_before: bandBefore,
+        band_after: bandAfter,
+        screen: grade.screen,
+      });
     },
 
     recordWordResult(word: string, result: 0 | 1) {

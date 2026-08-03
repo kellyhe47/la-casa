@@ -121,7 +121,13 @@ export function BedroomScreen({ graph, seed, onAdvance, independence, sessionPas
 
       if (result.pass) {
         graph.update(uniqueNodeIds, 1);
-        appStore.getState().commitItemBoundary(graph);
+        // 024/C3: the bedroom's item is the PAGE, so `word` names the page text.
+        appStore.getState().commitItemBoundary(graph, {
+          word: currentSentence,
+          nodeIds: uniqueNodeIds,
+          result: 1,
+          screen: "bedroom",
+        });
         setPageCompleted(true);
         setMissCount(0);
         setMomVisible(false);
@@ -144,7 +150,12 @@ export function BedroomScreen({ graph, seed, onAdvance, independence, sessionPas
         // 016/F3: a missed page is an item — record the boundary here so two
         // consecutive missed items can cost a band. Exactly one boundary per
         // item: the grace branch below no longer records its own.
-        appStore.getState().commitItemBoundary(graph);
+        appStore.getState().commitItemBoundary(graph, {
+          word: currentSentence,
+          nodeIds: uniqueNodeIds,
+          result: 0,
+          screen: "bedroom",
+        });
 
         if (newMissCount >= 2) {
           // Grace pattern

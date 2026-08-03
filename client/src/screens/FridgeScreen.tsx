@@ -76,7 +76,11 @@ export function FridgeScreen({ graph, onAdvance, independence, sessionMissedWord
   // failure this scene is allowed to record, so later flailing changes nothing.
   const wrongLettersRef = useRef(0);
   const sceneFailureRecordedRef = useRef(false);
+  /** The clip currently on the speakers — at most one, ever (023). */
   const audioRef = useRef<HTMLAudioElement | null>(null);
+  /** Resolvers for clips still being awaited, so leaving the scene can never
+   *  strand a caller on audio that will now never end. */
+  const pendingRef = useRef<Set<() => void>>(new Set());
   // Flipped on unmount — a TTS response landing late must not speak over the
   // bedroom scene (only Mamá and the baby talk there)
   const cancelledRef = useRef(false);
@@ -84,21 +88,53 @@ export function FridgeScreen({ graph, onAdvance, independence, sessionMissedWord
   useEffect(() => {
     // StrictMode remounts after running cleanup — un-cancel on (re)mount
     cancelledRef.current = false;
+    const pending = pendingRef.current;
     return () => {
       cancelledRef.current = true;
       audioRef.current?.pause();
+      audioRef.current = null;
+      for (const finish of [...pending]) finish();
     };
   }, []);
 
+  /**
+   * 023: play one Papá clip from start to FINISH.
+   *
+   * `audio.play()` resolves when playback *starts*, so awaiting it sequences
+   * nothing — that is how the praise and the next-word prompt ended up audible
+   * at the same time. This resolves only on a genuine end signal: the `ended`
+   * event, a media `error`, or a `play()` that never got going. Never a timer.
+   *
+   * Starting a clip stops the outgoing one, so at most one is ever audible, and
+   * every failure path still resolves — late or missing audio must not block
+   * gameplay (R8.4.3).
+   */
   const playAudio = useCallback(async (text: string, voiceId: string) => {
     try {
       const buffer = await contentPipeline.fetchTTS({ text, voiceId, lang: "en-US" });
       if (cancelledRef.current) return; // scene already left — drop the audio
+      audioRef.current?.pause(); // stop whatever is still playing
       const blob = new Blob([buffer], { type: "audio/mpeg" });
       const url = URL.createObjectURL(blob);
       const audio = new Audio(url);
       audioRef.current = audio;
-      await audio.play();
+      await new Promise<void>((resolve) => {
+        let settled = false;
+        const finish = () => {
+          if (settled) return;
+          settled = true;
+          pendingRef.current.delete(finish);
+          audio.removeEventListener("ended", finish);
+          audio.removeEventListener("error", finish);
+          resolve();
+        };
+        pendingRef.current.add(finish);
+        audio.addEventListener("ended", finish);
+        audio.addEventListener("error", finish);
+        // A rejected play() settles in the same microtask chain — no timer, and
+        // no way for dead audio to hang the scene.
+        Promise.resolve(audio.play()).catch(finish);
+      });
     } catch {
       // Living-scene wait: audio late (R8.4.3)
     }
@@ -130,21 +166,33 @@ export function FridgeScreen({ graph, onAdvance, independence, sessionMissedWord
     if (wrongLettersRef.current < 2) return; // a single slip stays free
     sceneFailureRecordedRef.current = true;
 
-    const target = getNodesForWord(currentWord)[0] || "g_sh";
+    const nodeIds = getNodesForWord(currentWord);
+    const target = nodeIds[0] || "g_sh";
     graph.update([target], 0);
     graph.update([target], 0);
-    // Two updates, ONE boundary — and therefore exactly one save.
-    appStore.getState().commitItemBoundary(graph);
+    // Two updates, ONE boundary — and therefore exactly one save and, 024/C3,
+    // exactly one grade event.
+    appStore.getState().commitItemBoundary(graph, {
+      word: currentWord,
+      nodeIds: nodeIds.length > 0 ? nodeIds : [target],
+      result: 0,
+      screen: "fridge",
+    });
   }, [currentWord, graph]);
 
-  const handleWordComplete = useCallback((word: string) => {
+  const handleWordComplete = useCallback(async (word: string) => {
     // Grade (deterministic, R7.3)
     const isCorrect = gradeSpelling(word, currentWord);
     if (!isCorrect) return; // MagnetTray handles wrong letter wobble
 
     const nodeIds = getNodesForWord(currentWord);
     graph.update(nodeIds, 1);
-    appStore.getState().commitItemBoundary(graph);
+    appStore.getState().commitItemBoundary(graph, {
+      word: currentWord,
+      nodeIds,
+      result: 1,
+      screen: "fridge",
+    });
     appStore.getState().recordWordResult(currentWord, 1);
 
     setStickyNotes((prev) => [
@@ -159,16 +207,16 @@ export function FridgeScreen({ graph, onAdvance, independence, sessionMissedWord
     setItemCompleted(true);
     setLoopState("stick");
 
-    // Speak completion
-    playAudio(dadLine("dad.fridge.success", independence, currentWord), DAD_VOICE_ID);
+    // 023: the praise plays to the END before anything else speaks. Awaited,
+    // not raced against a fixed timer — the scene advances on audio, and the
+    // next word's prompt can no longer start over the top of Papá.
+    await playAudio(dadLine("dad.fridge.success", independence, currentWord), DAD_VOICE_ID);
+    if (cancelledRef.current) return; // scene left while Papá was talking
 
-    // Move to next word after short delay
-    setTimeout(() => {
-      const nextWord = pickWord();
-      setCurrentWord(nextWord);
-      setTrayKey((k) => k + 1);
-      setLoopState("prompt");
-    }, 2000);
+    const nextWord = pickWord();
+    setCurrentWord(nextWord);
+    setTrayKey((k) => k + 1);
+    setLoopState("prompt");
   }, [currentWord, graph, playAudio, pickWord, independence]);
 
   const handleExit = useCallback(async () => {
